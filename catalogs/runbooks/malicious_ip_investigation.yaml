@@ -1,0 +1,18 @@
+id: malicious_ip_investigation
+description: Investigate a suspicious or reported malicious IP address across threat intel feeds, geolocation, and passive DNS to determine threat level and recommended action
+tags:
+  - security
+  - ip
+  - malicious
+  - investigate
+skills: [threat_intel_analyst, security_analyst]
+guidelines: [escalation_policy, output_format]
+steps:
+  - text: Query threat intelligence feeds for the IP address and retrieve all known indicators
+    tools: [query_threat_intel]
+  - text: Get geolocation, ASN ownership, and hosting provider for the IP
+    tools: [get_ip_geo]
+  - text: Look up passive DNS history to identify associated domains and infrastructure
+    tools: [get_passive_dns]
+  - text: Correlate findings across all sources — identify linked TTPs, threat actor patterns, and campaign overlap
+  - text: Produce a verdict with threat classification, confidence level, and recommended containment or monitoring actions

@@ -1,0 +1,7 @@
+{
+  "description": "Review PR #482 in acme/backend for security vulnerabilities",
+  "input_data": {
+    "pr_number": 482,
+    "repo": "acme/backend"
+  }
+}

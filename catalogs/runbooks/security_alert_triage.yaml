@@ -1,0 +1,12 @@
+id: security_alert_triage
+description: Triage a security alert for indicators of lateral movement or host compromise
+tags:
+  - security
+  - triage
+  - alert
+steps:
+  - Retrieve the alert details and enrich with host and process context
+  - Check for indicators of lateral movement in the alert data
+  - Query threat intelligence for any IOCs found in the alert
+  - Assess the severity, blast radius, and potential impact
+  - Generate a triage report with findings and recommended containment actions

@@ -1,0 +1,10 @@
+[
+  {
+    "description": "Review PR #1 in hoopdunker/moontesting for security vulnerabilities",
+    "input_data": {"pr_number": 1, "repo": "hoopdunker/moontesting"}
+  },
+  {
+    "description": "Triage CrowdStrike alert CS-2024-0482 for lateral movement on prod-db-03",
+    "input_data": {"alert_id": "CS-2024-0482", "host": "prod-db-03"}
+  }
+]

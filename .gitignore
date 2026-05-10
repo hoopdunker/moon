@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+dist/
+*.egg-info/
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfvars
+terraform/tfplan
+terraform/*.tfplan
+
+# Claude local settings (hooks, personal overrides)
+.claude/settings.local.json

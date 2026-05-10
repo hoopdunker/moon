@@ -1,0 +1,25 @@
+name: get_alert_details
+description: Retrieves full details for a security alert by ID, including host context, process tree, and detection metadata
+parameters:
+  type: object
+  properties:
+    alert_id:
+      type: string
+      description: The alert identifier (e.g. CS-2024-0482)
+  required:
+    - alert_id
+mock_response: |
+  Alert ID: CS-2024-0482
+  Severity: High
+  Host: prod-db-03
+  OS: Windows Server 2019
+  Process: cmd.exe (PID 4821)
+  Parent Process: svchost.exe (PID 892)
+  Technique: T1021.002 (Remote Services: SMB/Windows Admin Shares)
+  Timestamp: 2024-01-15T14:23:11Z
+  User: DOMAIN\svc_backup
+  Indicators:
+    - 47 failed auth attempts from 10.0.1.45 in past 2 hours
+    - Unusual outbound SMB traffic to 10.0.2.0/24
+    - cmd.exe spawned by svchost.exe (anomalous parent-child relationship)
+    - Access to ADMIN$ share on 3 additional hosts: prod-db-01, prod-db-02, prod-web-07

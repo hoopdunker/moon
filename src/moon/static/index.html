@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moon</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #7d8590; --accent: #388bfd;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; font-size: 13px; height: 100vh; display: flex; flex-direction: column; }
+
+  header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--accent); }
+  header span { color: var(--muted); font-size: 12px; }
+  header button { margin-left: auto; background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  header button:hover { opacity: 0.85; }
+
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-search { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .sidebar-search input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; outline: none; }
+  .case-list { flex: 1; overflow-y: auto; }
+  .case-item { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .case-item:hover { background: var(--surface); }
+  .case-item.active { background: var(--surface); border-left: 2px solid var(--accent); }
+  .case-item-desc { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .case-item-meta { display: flex; gap: 8px; align-items: center; }
+  .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+  .badge.running  { background: #1c2d3f; color: var(--accent); }
+  .badge.completed { background: #1c2d1f; color: var(--green); }
+  .badge.failed   { background: #2d1c1c; color: var(--red); }
+  .badge.pending  { background: #2a2520; color: var(--yellow); }
+  .case-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+
+  /* Detail */
+  .detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+
+  .detail-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .detail-header h2 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .detail-meta { display: flex; gap: 16px; font-size: 11px; color: var(--muted); }
+  .detail-meta strong { color: var(--text); }
+
+  .detail-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Steps */
+  .step { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .step-header { padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .step-header:hover { background: var(--surface); }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .step-num.pending   { background: var(--border); color: var(--muted); }
+  .step-num.running   { background: var(--accent); color: #fff; animation: pulse 1.2s infinite; }
+  .step-num.completed { background: var(--green); color: #fff; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+  .step-text { flex: 1; font-size: 12px; }
+  .step-duration { font-size: 10px; color: var(--muted); }
+  .step-tools { display: flex; gap: 4px; margin-left: 4px; }
+  .tool-chip { font-size: 9px; padding: 1px 5px; background: #1c2533; color: var(--purple); border-radius: 4px; }
+  .step-body { padding: 12px 14px; border-top: 1px solid var(--border); background: var(--bg); display: none; }
+  .step-body.open { display: block; }
+  .step-output { font-size: 11px; line-height: 1.6; white-space: pre-wrap; color: var(--muted); max-height: 400px; overflow-y: auto; }
+
+  /* Final output */
+  .final-output { border: 1px solid var(--green); border-radius: 8px; overflow: hidden; }
+  .final-output-header { padding: 10px 14px; background: #1c2d1f; font-size: 12px; font-weight: 600; color: var(--green); }
+  .final-output-body { padding: 14px; font-size: 11px; line-height: 1.7; white-space: pre-wrap; color: var(--text); max-height: 500px; overflow-y: auto; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; width: 480px; display: flex; flex-direction: column; gap: 12px; }
+  .modal h3 { font-size: 14px; }
+  .modal textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 6px; font-size: 12px; resize: vertical; min-height: 80px; outline: none; font-family: inherit; }
+  .modal textarea:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-actions button { padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
+  .btn-cancel { background: var(--border); color: var(--text); }
+  .btn-submit { background: var(--accent); color: #fff; }
+
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ Moon</h1>
+  <span>Security Orchestration</span>
+  <button id="new-btn">+ New Task</button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-search">
+      <input id="search" type="text" placeholder="Search cases…">
+    </div>
+    <div class="case-list" id="case-list"></div>
+  </aside>
+  <main class="detail" id="detail">
+    <div class="empty">Select a case or create a new task</div>
+  </main>
+</div>
+
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <h3>New Task</h3>
+    <textarea id="task-input" placeholder="Describe the security task…&#10;e.g. Review PR #42 in acme/backend for vulnerabilities"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-submit" id="modal-submit">Run Task</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let activeCaseId = null;
+let activeStream = null;
+let cases = {};
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+
+function fmt_ms(ms) {
+  if (!ms) return '';
+  if (ms < 1000) return ms + 'ms';
+  return (ms / 1000).toFixed(1) + 's';
+}
+
+function time_ago(ts) {
+  if (!ts) return '';
+  const s = Math.floor(Date.now() / 1000 - ts);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  return Math.floor(s/3600) + 'h ago';
+}
+
+// ── API ───────────────────────────────────────────────────────────────────
+
+async function fetchCases() {
+  const res = await fetch('/cases');
+  const list = await res.json();
+  list.forEach(c => { cases[c.id] = c; });
+  renderList();
+}
+
+async function submitTask(description) {
+  const res = await fetch('/cases', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({description}),
+  });
+  const {case_id} = await res.json();
+  cases[case_id] = {id: case_id, description, status: 'pending', steps: [], runbook_id: ''};
+  renderList();
+  openCase(case_id);
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+
+function renderList() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const el = document.getElementById('case-list');
+  const sorted = Object.values(cases).sort((a,b) => (b.started_at||0) - (a.started_at||0));
+  el.innerHTML = sorted
+    .filter(c => !q || c.description.toLowerCase().includes(q))
+    .map(c => `
+      <div class="case-item ${c.id === activeCaseId ? 'active' : ''}" onclick="openCase('${c.id}')">
+        <div class="case-item-desc" title="${c.description}">${c.description}</div>
+        <div class="case-item-meta">
+          <span class="badge ${c.status}">${c.status}</span>
+          ${c.runbook_id ? `<span style="font-size:10px;color:var(--muted)">${c.runbook_id}</span>` : ''}
+          <span class="case-time">${time_ago(c.started_at)}</span>
+        </div>
+      </div>
+    `).join('');
+}
+
+function renderDetail(c) {
+  const total_ms = c.completed_at && c.started_at ? (c.completed_at - c.started_at) * 1000 : null;
+  document.getElementById('detail').innerHTML = `
+    <div class="detail-header">
+      <h2>${c.description}</h2>
+      <div class="detail-meta">
+        <span><strong>Status</strong> <span class="badge ${c.status}">${c.status}</span></span>
+        ${c.runbook_id ? `<span><strong>Runbook</strong> ${c.runbook_id}</span>` : ''}
+        ${total_ms ? `<span><strong>Duration</strong> ${fmt_ms(total_ms)}</span>` : ''}
+        <span><strong>Steps</strong> ${c.steps.filter(s=>s.status==='completed').length}/${c.steps.length}</span>
+      </div>
+    </div>
+    <div class="detail-body" id="detail-body">
+      ${c.steps.map(s => renderStep(s)).join('')}
+      ${c.final_output ? renderFinal(c.final_output) : ''}
+      ${c.error ? `<div style="color:var(--red);padding:12px;border:1px solid var(--red);border-radius:8px">${c.error}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderStep(s) {
+  const tools = s.tools_used?.length
+    ? s.tools_used.map(t => `<span class="tool-chip">${t}</span>`).join('')
+    : '';
+  return `
+    <div class="step" id="step-${s.index}">
+      <div class="step-header" onclick="toggleStep(${s.index})">
+        <div class="step-num ${s.status}">${s.index + 1}</div>
+        <div class="step-text">${s.text}</div>
+        <div class="step-tools">${tools}</div>
+        <div class="step-duration">${fmt_ms(s.duration_ms)}</div>
+      </div>
+      <div class="step-body ${s.status === 'completed' && s.output ? '' : ''}" id="step-body-${s.index}">
+        <div class="step-output">${s.output || ''}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFinal(output) {
+  return `
+    <div class="final-output">
+      <div class="final-output-header">Final Output</div>
+      <div class="final-output-body">${output}</div>
+    </div>
+  `;
+}
+
+function toggleStep(index) {
+  const body = document.getElementById(`step-body-${index}`);
+  if (body) body.classList.toggle('open');
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────
+
+function openCase(caseId) {
+  activeCaseId = caseId;
+  if (activeStream) { activeStream.close(); activeStream = null; }
+  renderList();
+
+  const c = cases[caseId];
+  if (c) renderDetail(c);
+
+  const es = new EventSource(`/cases/${caseId}/stream`);
+  activeStream = es;
+
+  es.onmessage = (e) => {
+    const event = JSON.parse(e.data);
+    if (event.type === 'ping') return;
+    applyEvent(caseId, event);
+  };
+
+  es.onerror = () => es.close();
+}
+
+function applyEvent(caseId, event) {
+  let c = cases[caseId];
+  if (!c) return;
+
+  if (event.type === 'snapshot') {
+    cases[caseId] = event;
+    c = event;
+  } else if (event.type === 'task_started') {
+    c.status = 'running';
+  } else if (event.type === 'runbook_selected') {
+    c.runbook_id = event.runbook_id;
+    c.steps = (event.step_texts || []).map((text, i) => ({index: i, text, status: 'pending', duration_ms: 0, tools_used: [], output: ''}));
+  } else if (event.type === 'step_started') {
+    if (c.steps[event.step_index]) c.steps[event.step_index].status = 'running';
+  } else if (event.type === 'step_completed') {
+    const s = c.steps[event.step_index];
+    if (s) { s.status = 'completed'; s.duration_ms = event.duration_ms; s.tools_used = event.tools_used || []; s.output = event.output || ''; }
+  } else if (event.type === 'task_completed') {
+    c.status = 'completed'; c.final_output = event.final_output; c.completed_at = Date.now() / 1000;
+  } else if (event.type === 'task_failed') {
+    c.status = 'failed'; c.error = event.error; c.completed_at = Date.now() / 1000;
+  }
+
+  if (caseId === activeCaseId) renderDetail(c);
+  renderList();
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+
+document.getElementById('new-btn').onclick = () => {
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('task-input').focus();
+};
+document.getElementById('modal-cancel').onclick = () => {
+  document.getElementById('modal').classList.add('hidden');
+};
+document.getElementById('modal-submit').onclick = async () => {
+  const desc = document.getElementById('task-input').value.trim();
+  if (!desc) return;
+  document.getElementById('modal').classList.add('hidden');
+  document.getElementById('task-input').value = '';
+  await submitTask(desc);
+};
+document.getElementById('task-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) document.getElementById('modal-submit').click();
+});
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal')) document.getElementById('modal').classList.add('hidden');
+});
+document.getElementById('search').addEventListener('input', renderList);
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+fetchCases();
+setInterval(renderList, 15000); // refresh timestamps
+</script>
+</body>
+</html>

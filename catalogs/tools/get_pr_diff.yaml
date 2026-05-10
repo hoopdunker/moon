@@ -1,0 +1,32 @@
+name: get_pr_diff
+description: Retrieves the diff, changed files, and metadata for a GitHub pull request
+parameters:
+  type: object
+  properties:
+    pr_number:
+      type: integer
+      description: The pull request number
+    repo:
+      type: string
+      description: Repository in owner/name format (e.g. acme/backend)
+  required:
+    - pr_number
+    - repo
+mock_response: |
+  PR #482: Update authentication middleware
+  Author: dev-alice
+  Branch: feature/auth-refactor → main
+  Files changed: 2 (src/auth/middleware.py, src/auth/permissions.py)
+
+  diff --git a/src/auth/middleware.py b/src/auth/middleware.py
+  @@ -45,6 +45,7 @@ def verify_token(token: str) -> Optional[User]:
+  -    query = f"SELECT * FROM users WHERE token = '{token}'"
+  +    query = "SELECT * FROM users WHERE token = %s"
+  +    cursor.execute(query, (token,))
+
+  diff --git a/src/auth/permissions.py b/src/auth/permissions.py
+  @@ -12,4 +12,7 @@
+  +def get_user_permissions(user_id: int) -> list[str]:
+  +    """Fetch permissions for a user."""
+  +    sql = f"SELECT perm FROM permissions WHERE uid = {user_id}"
+  +    return [row[0] for row in db.execute(sql)]

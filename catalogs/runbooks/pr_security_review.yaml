@@ -1,0 +1,15 @@
+id: pr_security_review
+description: Review a pull request for security vulnerabilities and insecure coding patterns
+tags:
+  - security
+  - code-review
+  - pr
+skills: [code_reviewer, security_analyst]
+guidelines: [escalation_policy, output_format]
+steps:
+  - text: Retrieve the pull request diff and metadata
+    tools: [get_pr_diff]
+  - text: Identify any authentication or authorization changes
+  - text: Scan for injection vulnerabilities and insecure coding patterns
+  - text: Check for secrets, credentials, or sensitive data exposure
+  - text: Generate a security review report with severity-ranked findings and remediation steps

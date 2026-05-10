@@ -1,0 +1,12 @@
+aws_region             = "us-west-2"
+app_name               = "moon"
+task_cpu               = 512
+task_memory            = 1024
+desired_count          = 1
+image_tag              = "latest"
+log_retention_days     = 30
+moon_mock_tools        = false
+moon_coordinator_model = "claude-haiku-4-5-20251001"
+moon_agent_model       = "claude-sonnet-4-6"
+github_repo            = "your-org/moon"
+# Pass via env var, not here: TF_VAR_allowed_cidr="x.x.x.x/32"

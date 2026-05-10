@@ -1,0 +1,7 @@
+{
+  "description": "Investigate IP 185.220.101.47 — observed making repeated connections to our VPN gateway",
+  "input_data": {
+    "ip": "185.220.101.47",
+    "context": "Multiple failed VPN authentication attempts over 6 hours"
+  }
+}

@@ -1,0 +1,22 @@
+name: get_ip_geo
+description: Returns geolocation, ASN, hosting provider, and network ownership for an IP address
+parameters:
+  type: object
+  properties:
+    ip:
+      type: string
+      description: The IP address to look up
+  required:
+    - ip
+mock_response: |
+  IP: 185.220.101.47
+  Country: Germany (DE)
+  City: Frankfurt
+  ASN: AS205100 (F3 Netze e.V.)
+  Hosting Provider: Tor exit node hosting — known anonymisation infrastructure
+  Network Type: Hosting / Data Center
+  Abuse Contact: abuse@f3netze.de
+  Is Tor Exit Node: Yes
+  Is Known VPN/Proxy: Yes
+  Threat Score: 92/100
+  Tags: tor-exit, anonymizer, high-volume-scanner

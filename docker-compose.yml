@@ -1,0 +1,25 @@
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    ports:
+      - "8001:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-inMemory"]
+
+  moon:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - dynamodb-local
+    restart: on-failure
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      MOON_MOCK_TOOLS: ${MOON_MOCK_TOOLS:-true}
+      MOON_DYNAMO_TABLE: moon-cases
+      MOON_DYNAMO_ENDPOINT_URL: http://dynamodb-local:8000
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      AWS_REGION: us-east-1
+    volumes:
+      - ./catalogs:/app/catalogs

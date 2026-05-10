@@ -1,0 +1,20 @@
+name: get_passive_dns
+description: Returns passive DNS history for an IP — domains that have resolved to it, first/last seen timestamps, and associated infrastructure
+parameters:
+  type: object
+  properties:
+    ip:
+      type: string
+      description: The IP address to look up passive DNS for
+  required:
+    - ip
+mock_response: |
+  IP: 185.220.101.47
+  Passive DNS Records (last 90 days):
+    - domain: c2.malicious-domain.ru  first_seen: 2024-11-01  last_seen: 2024-12-14
+    - domain: exfil.darknet-host.cc   first_seen: 2024-10-22  last_seen: 2024-11-30
+    - domain: update.fake-cdn.net     first_seen: 2024-09-15  last_seen: 2024-10-01
+  Total unique domains: 3
+  Registrar patterns: Predominantly .ru and .cc TLDs, privacy-protected registration
+  Infrastructure overlap: 2 domains share SSL certificate with known Cobalt Strike C2
+  Note: High churn rate — domains rotated every 30-45 days, consistent with C2 infrastructure management

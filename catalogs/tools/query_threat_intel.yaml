@@ -1,0 +1,25 @@
+name: query_threat_intel
+description: Queries threat intelligence databases for IOCs including IPs, domains, file hashes, and process names
+parameters:
+  type: object
+  properties:
+    ioc:
+      type: string
+      description: The indicator of compromise to look up
+    ioc_type:
+      type: string
+      enum: [ip, domain, hash, process]
+      description: The type of IOC
+  required:
+    - ioc
+    - ioc_type
+mock_response: |
+  IOC: 10.0.1.45
+  Type: Internal IP
+  External Threat Intel: No external hits (RFC1918 address)
+  Internal Activity: Source of 47 failed auth attempts across 3 hosts in past 2h
+  Historical: No prior incidents involving this IP in the last 90 days
+  Associated Host: dev-workstation-12 (assigned to contractor account)
+  Linked TTPs: T1021.002 (SMB/Windows Admin Shares), T1078 (Valid Accounts)
+  Recommendation: Investigate dev-workstation-12 for compromise; review contractor account activity; consider isolation
+  Confidence: Medium
