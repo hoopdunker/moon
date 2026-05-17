@@ -1,0 +1,48 @@
+name: fetch_latest_cves
+description: >
+  Fetches recent CVEs from the NVD API v2 and cross-references them against the
+  CISA Known Exploited Vulnerabilities (KEV) catalog. Actively exploited CVEs
+  surface first; results are sorted by KEV status then CVSS score descending.
+parameters:
+  type: object
+  properties:
+    severity:
+      type: string
+      enum: [critical, high, critical_and_high, all]
+      description: Filter by CVSS v3 severity. Defaults to critical_and_high.
+    days_back:
+      type: integer
+      description: How many days back to search for published CVEs (default 7, max 30).
+    max_results:
+      type: integer
+      description: Maximum number of CVEs to return (default 10, max 50).
+  required: []
+mock_response: |
+  Fetched 8 CVEs from NVD (last 7 days). 2 in CISA KEV.
+
+  ★ CISA KEV (Actively Exploited):
+  CVE-2025-0282 | CVSS 9.0 CRITICAL | KEV deadline: 2025-01-15
+    Ivanti Connect Secure stack-based buffer overflow allows unauthenticated remote code execution.
+    Affected: ivanti_connect_secure >=22.7r2 <22.7r2.5; ivanti_policy_secure >=22.7r1 <22.7r1.2
+    Fix: upgrade to ivanti_connect_secure 22.7r2.5; ivanti_policy_secure 22.7r1.2
+
+  CVE-2025-0283 | CVSS 7.0 HIGH | KEV deadline: 2025-01-15
+    Ivanti Connect Secure stack-based buffer overflow allows local privilege escalation.
+    Affected: ivanti_connect_secure >=22.7r2 <22.7r2.5
+    Fix: upgrade to ivanti_connect_secure 22.7r2.5
+
+  Other CVEs:
+  CVE-2025-21333 | CVSS 7.8 HIGH
+    Windows Hyper-V NT Kernel Integration VSP heap-based buffer overflow leading to SYSTEM privileges.
+    Affected: windows_11 >=10.0.22000 <10.0.22000.3800; windows_server_2022 >=10.0.20348 <10.0.20348.3200
+    Fix: upgrade to windows_11 10.0.22000.3800; windows_server_2022 10.0.20348.3200
+
+  CVE-2025-21334 | CVSS 7.8 HIGH
+    Windows Hyper-V NT Kernel Integration VSP use-after-free allowing local privilege escalation.
+    Affected: windows_server_2025 >=10.0.26100 <10.0.26100.2894
+    Fix: upgrade to windows_server_2025 10.0.26100.2894
+
+  CVE-2025-3102 | CVSS 9.8 CRITICAL
+    SureTriggers WordPress plugin authentication bypass via empty secret key check.
+    Affected: suretriggers >=0.0.1 <=1.0.78
+    Fix: no patch available — isolate affected component, apply WAF/network-level controls, and monitor vendor advisory for emergency patch

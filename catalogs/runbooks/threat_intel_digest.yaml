@@ -1,0 +1,77 @@
+id: threat_intel_digest
+description: >
+  Generate a comprehensive threat intelligence digest by pulling from security news,
+  CVE feeds, and live threat intelligence sources, then synthesizing everything into
+  a structured brief for a CISO or security operations team.
+tags:
+  - threat-intel
+  - digest
+  - intel
+  - news
+  - cve
+  - feeds
+  - ciso
+steps:
+  - text: >
+      Fetch general security news headlines from the last 48 hours using sources:
+      bleepingcomputer, hackernews, krebsonsecurity, sans_isc, darkreading, securityweek,
+      the_record, cyberscoop. Set hours_back=48. Summarise the top stories — focus on
+      active exploits, notable breaches, and high-impact disclosures.
+    tools: [fetch_security_news]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch nation-state and APT threat intelligence from the last 7 days using sources:
+      recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk, unit42, talos,
+      securelist, sentinelone. Set hours_back=168. Identify active threat actor campaigns,
+      targeted sectors, TTPs observed, and any attribution. Note which groups are most active.
+    tools: [fetch_security_news]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch cryptocurrency and Web3 breach intelligence from the last 7 days using sources:
+      rekt_news, chainalysis, cointelegraph_security, the_block, slowmist. Set hours_back=168.
+      Identify hacks, rug pulls, or protocol exploits — note the attack vector, amount lost,
+      affected chain, and whether funds were recovered.
+    tools: [fetch_security_news]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch supply chain and open-source package security intelligence from the last 7 days
+      using sources: socket_dev, sonatype, snyk, checkmarx, openssf, chainguard.
+      Set hours_back=168. Identify malicious package publishes, dependency confusion attacks,
+      typosquats, and critical CVEs in widely-used open-source libraries. Note the package
+      name, registry (npm/PyPI/Maven/etc.), versions affected, and recommended action.
+    tools: [fetch_security_news]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch recent critical and high-severity CVEs from the last 7 days (hours_back=168).
+      Identify which are in the CISA KEV catalog (actively exploited), note their deadlines,
+      and rank the top patching priorities with affected products, version ranges, and fix versions.
+    tools: [fetch_latest_cves]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch all active threat feeds: recent malware samples, malicious URLs, and CISA
+      advisories. For each malware sample extract the family name, type, delivery method,
+      and any C2 infrastructure. Defang all URLs and domains.
+    tools: [fetch_threat_feeds]
+    skills: [threat_intel_analyst]
+
+  - text: >
+      Fetch the environment profile, then synthesise all gathered intelligence into a
+      structured threat intelligence brief following the intel_report guideline exactly.
+      Produce every section in order: metrics snapshot, executive summary, top nation-state
+      actors table (with MITRE ATT&CK TTP IDs), top vulnerabilities table, top malware
+      families table, top breaches table, top affected packages table, top MITRE TTPs table,
+      CVE patching priorities table, active IOCs grouped by type, recommended actions, and
+      intelligence gaps. For every finding: cross-reference the organisation's asset inventory
+      (mark CVEs as Not in inventory if the product is not deployed), map IOCs and TTPs to
+      the specific log sources available for hunting, reference controls that detect or
+      mitigate each threat, flag control gaps that increase exposure, and compare KEV
+      deadlines against the organisation's patch SLAs. Connect the dots across sections
+      where a single campaign spans multiple threat categories.
+    tools: [get_environment_profile]
+    skills: [threat_intel_analyst, intel_editor]
+    guidelines: [intel_report, output_format]

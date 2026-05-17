@@ -1,0 +1,99 @@
+# Moon Environment Profile
+# ─────────────────────────────────────────────────────────────────────────────
+# Define your infrastructure here. The threat intel digest uses this to produce
+# targeted, actionable recommendations — mapping IOCs to your log sources,
+# CVEs to your actual asset inventory, and gaps to your specific control set.
+#
+# All fields are optional. Comment out anything that doesn't apply.
+# ─────────────────────────────────────────────────────────────────────────────
+
+org: Acme Corp
+industry: technology          # e.g. finance, healthcare, technology, retail
+employee_count: ~500
+
+# ── Security Controls ────────────────────────────────────────────────────────
+controls:
+  endpoint:
+    - name: CrowdStrike Falcon
+      coverage: all workstations and servers
+      # version: "7.1"
+
+  network:
+    - name: Palo Alto NGFW
+      coverage: perimeter and east-west
+    - name: Cloudflare WAF
+      coverage: all public-facing endpoints
+
+  identity:
+    - name: Okta
+      coverage: all employees (MFA enforced)
+
+  cloud:
+    - name: AWS GuardDuty
+      coverage: all accounts
+    - name: AWS Security Hub
+      coverage: us-east-1, us-west-2
+
+  vulnerability_management:
+    - name: Qualys
+      coverage: all servers, weekly scan cadence
+
+  siem:
+    - name: Splunk
+      coverage: all sources listed below, 90-day retention
+
+  email:
+    - name: Proofpoint
+      coverage: all corporate email
+
+  # Controls you do NOT have yet — used to flag gaps in recommendations
+  gaps:
+    - No deception / honeypot layer
+    - No dark web monitoring
+    - No CASB for SaaS apps
+
+# ── Log Sources ───────────────────────────────────────────────────────────────
+log_sources:
+  - AWS CloudTrail (all regions)
+  - AWS VPC Flow Logs
+  - AWS S3 access logs
+  - AWS WAF logs
+  - CrowdStrike Falcon telemetry
+  - Palo Alto NGFW firewall logs
+  - Okta audit logs
+  - GitHub audit logs
+  - Cloudflare access logs
+
+# ── Asset Inventory ───────────────────────────────────────────────────────────
+assets:
+  cloud:
+    provider: AWS
+    regions: [us-east-1, us-west-2]
+    primary_services: [EC2, EKS, RDS, S3, Lambda]
+
+  on_prem: none
+
+  critical_systems:
+    - name: Payment processing
+      notes: PCI DSS in scope, isolated VPC
+    - name: Customer data store
+      notes: SOC 2 in scope, RDS PostgreSQL
+    - name: Internal developer platform
+      notes: GitHub Enterprise + EKS
+
+  public_attack_surface:
+    - Customer-facing web app (Cloudflare → ALB → EKS)
+    - API gateway (public)
+    - VPN endpoint (Palo Alto GlobalProtect)
+
+# ── Compliance & Frameworks ───────────────────────────────────────────────────
+compliance:
+  - SOC 2 Type II
+  - PCI DSS 4.0
+
+# ── Patch SLAs ────────────────────────────────────────────────────────────────
+# Used to contextualise KEV deadlines against your own SLAs
+patch_slas:
+  critical: 24 hours
+  high: 7 days
+  medium: 30 days

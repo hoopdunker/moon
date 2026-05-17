@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -14,6 +15,8 @@ from moon.executor import execute_task
 from moon.models import Task
 from moon import store as store_module
 from moon.store import store
+
+logger = logging.getLogger("moon.server")
 
 app = FastAPI(title="Moon")
 _pool = ThreadPoolExecutor(max_workers=config.MAX_WORKERS)

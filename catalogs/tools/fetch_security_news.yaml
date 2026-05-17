@@ -1,0 +1,52 @@
+name: fetch_security_news
+description: >
+  Fetches the latest headlines from security news RSS/Atom feeds across 9 categories:
+  general news, nation-state/APT intel, crypto breaches, vendor research blogs,
+  vulnerability research, supply chain, cloud bulletins, regulatory/breach disclosure,
+  geopolitical/policy, and AI security. Returns formatted text per source.
+parameters:
+  type: object
+  properties:
+    sources:
+      type: array
+      items:
+        type: string
+      description: >
+        List of source keys to fetch. Defaults to all sources if omitted.
+        Categories — general: bleepingcomputer, hackernews, krebsonsecurity, sans_isc,
+        darkreading, securityweek. Nation-state/APT: recorded_future, mandiant,
+        crowdstrike, microsoft_security, ncsc_uk. Crypto: rekt_news, chainalysis,
+        cointelegraph_security, the_block, slowmist. Vendor research: unit42, talos,
+        checkpoint_research, welivesecurity, sophos_news, securelist, sentinelone,
+        elastic_security, trend_micro, rapid7. Vuln research: project_zero, zdi,
+        exploit_db, portswigger_research, synacktiv, packetstorm, vuldb. Supply chain:
+        socket_dev, sonatype, snyk, checkmarx, openssf, chainguard. Cloud bulletins:
+        aws_security, gcp_security, msrc_blog. Patch advisories: adobe_psirt,
+        oracle_cpu, sap_security. Regulatory: ftc_press, ico_uk, ms_isac,
+        hipaa_journal. Geopolitical: the_record, cyberscoop, lawfare, politico_cyber.
+        AI security: hiddenlayer, protect_ai, lakera, trail_of_bits, adversa_ai,
+        wiz_research.
+    max_items:
+      type: integer
+      description: Maximum headlines to return per feed (default 5, max 20).
+  required: []
+mock_response: |
+  === Bleeping Computer ===
+  [Tue, 14 Jan 2025] Critical RCE in Ivanti Connect Secure exploited in the wild
+    Attackers are chaining CVE-2025-0282 and CVE-2025-0283 to deploy SPAWN malware on unpatched Ivanti gateways.
+    https://www.bleepingcomputer.com/news/security/ivanti-connect-secure-rce/
+
+  === Unit42 ===
+  [Mon, 13 Jan 2025] Lazarus Group targets European defense contractors via LinkedIn
+    North Korean APT uses fake recruiter personas to deliver BUNNYCARROT backdoor via trojanized coding challenges.
+    https://unit42.paloaltonetworks.com/lazarus-linkedin-campaign/
+
+  === Rekt News ===
+  [Sun, 12 Jan 2025] Radiant Capital — $50M drained via compromised multisig
+    Attackers compromised 3 of 11 multisig signers through targeted malware, draining Arbitrum and BSC pools.
+    https://rekt.news/radiant-capital-rekt/
+
+  === Project Zero ===
+  [Fri, 10 Jan 2025] In-the-wild exploitation of Chrome V8 type confusion (CVE-2025-0117)
+    Full exploit chain analysis: sandbox escape via renderer, kernel privilege escalation via GPU driver use-after-free.
+    https://googleprojectzero.blogspot.com/2025/01/chrome-v8-type-confusion/

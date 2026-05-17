@@ -1,0 +1,61 @@
+name: get_environment_profile
+description: >
+  Returns the organisation's security environment profile from catalogs/environment.yaml.
+  Includes deployed security controls (endpoint, network, identity, cloud, SIEM, email),
+  known gaps, log sources available for hunting, asset inventory (cloud regions, critical
+  systems, public attack surface), compliance frameworks, and patch SLAs.
+  Use this during threat intel synthesis to produce targeted recommendations — mapping
+  IOCs to specific log sources, CVEs to actual inventory, and remediations to controls
+  already in place vs gaps that need addressing.
+parameters:
+  type: object
+  properties: {}
+  required: []
+mock_response: |
+  Org: Acme Corp | Industry: technology | Size: ~500 employees
+
+  === Security Controls ===
+    [Endpoint] CrowdStrike Falcon — all workstations and servers
+    [Network] Palo Alto NGFW — perimeter and east-west
+    [Network] Cloudflare WAF — all public-facing endpoints
+    [Identity] Okta — all employees (MFA enforced)
+    [Cloud] AWS GuardDuty — all accounts
+    [Cloud] AWS Security Hub — us-east-1, us-west-2
+    [Vulnerability Management] Qualys — all servers, weekly scan cadence
+    [Siem] Splunk — all sources listed below, 90-day retention
+    [Email] Proofpoint — all corporate email
+    [Gaps]
+      - No deception / honeypot layer
+      - No dark web monitoring
+      - No CASB for SaaS apps
+
+  === Log Sources ===
+    - AWS CloudTrail (all regions)
+    - AWS VPC Flow Logs
+    - AWS S3 access logs
+    - AWS WAF logs
+    - CrowdStrike Falcon telemetry
+    - Palo Alto NGFW firewall logs
+    - Okta audit logs
+    - GitHub audit logs
+    - Cloudflare access logs
+
+  === Asset Inventory ===
+    Cloud: AWS (us-east-1, us-west-2)
+      Services: EC2, EKS, RDS, S3, Lambda
+    Critical systems:
+      - Payment processing [PCI DSS in scope, isolated VPC]
+      - Customer data store [SOC 2 in scope, RDS PostgreSQL]
+      - Internal developer platform [GitHub Enterprise + EKS]
+    Public attack surface:
+      - Customer-facing web app (Cloudflare → ALB → EKS)
+      - API gateway (public)
+      - VPN endpoint (Palo Alto GlobalProtect)
+
+  === Compliance ===
+    SOC 2 Type II, PCI DSS 4.0
+
+  === Patch SLAs ===
+    Critical: 24 hours
+    High: 7 days
+    Medium: 30 days

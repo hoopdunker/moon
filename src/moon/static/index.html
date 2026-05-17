@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Moon</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -70,8 +71,27 @@
 
   /* Final output */
   .final-output { border: 1px solid var(--green); border-radius: 8px; overflow: hidden; }
-  .final-output-header { padding: 10px 14px; background: #1c2d1f; font-size: 12px; font-weight: 600; color: var(--green); }
-  .final-output-body { padding: 14px; font-size: 11px; line-height: 1.7; white-space: pre-wrap; color: var(--text); max-height: 500px; overflow-y: auto; }
+  .final-output-header { padding: 10px 14px; background: #1c2d1f; font-size: 12px; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 8px; }
+  .final-output-body { padding: 16px 20px; font-size: 12px; line-height: 1.8; color: var(--text); max-height: 70vh; overflow-y: auto; }
+  .step-output { font-size: 11px; line-height: 1.6; color: var(--muted); max-height: 400px; overflow-y: auto; }
+
+  /* Markdown rendering */
+  .md h1 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; color: var(--text); }
+  .md h2 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .md h3 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: var(--accent); }
+  .md p { margin: 6px 0; }
+  .md strong { color: var(--text); }
+  .md ul, .md ol { padding-left: 18px; margin: 6px 0; }
+  .md li { margin: 3px 0; }
+  .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .md code { background: #1c2533; color: var(--purple); padding: 1px 5px; border-radius: 3px; font-size: 10px; font-family: monospace; }
+  .md pre { background: #1c2533; padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
+  .md pre code { background: none; padding: 0; }
+  .md table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 11px; }
+  .md th { background: var(--surface); color: var(--text); padding: 6px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+  .md td { padding: 5px 10px; border: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+  .md td:first-child { color: var(--text); font-weight: 500; }
+  .md blockquote { border-left: 3px solid var(--accent); padding-left: 10px; color: var(--muted); margin: 6px 0; }
 
   /* Modal */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
@@ -85,6 +105,36 @@
   .btn-cancel { background: var(--border); color: var(--text); }
   .btn-submit { background: var(--accent); color: #fff; }
 
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .tab { background: none; border: none; color: var(--muted); padding: 10px 16px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+
+  /* Intel panel */
+  .intel-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .intel-panel-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .intel-panel-header h2 { font-size: 15px; font-weight: 600; }
+  .intel-meta { font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .intel-panel-header button { margin-left: auto; background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .intel-panel-header button:hover { opacity: 0.85; }
+  .intel-panel-header button.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .intel-body { flex: 1; overflow-y: auto; padding: 24px 32px; }
+  .intel-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); }
+  .intel-empty button { background: var(--accent); color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 4px; }
+
+  /* Intel running state */
+  .intel-running { border: 1px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; background: #0d1a2d; }
+  .intel-running .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .intel-steps { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; font-size: 11px; color: var(--muted); }
+  .intel-step { display: flex; align-items: center; gap: 8px; }
+  .intel-step .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .intel-step.done .dot { background: var(--green); }
+  .intel-step.active .dot { background: var(--accent); animation: pulse 1.2s infinite; }
+  .intel-step.pending .dot { background: var(--border); }
+
+  .hidden { display: none !important; }
   ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
@@ -96,7 +146,12 @@
   <button id="new-btn">+ New Task</button>
 </header>
 
-<div class="layout">
+<nav class="tabs">
+  <button class="tab active" id="tab-cases" onclick="switchTab('cases')">Cases</button>
+  <button class="tab" id="tab-intel" onclick="switchTab('intel')">Intel</button>
+</nav>
+
+<div class="layout" id="pane-cases">
   <aside class="sidebar">
     <div class="sidebar-search">
       <input id="search" type="text" placeholder="Search cases…">
@@ -106,6 +161,22 @@
   <main class="detail" id="detail">
     <div class="empty">Select a case or create a new task</div>
   </main>
+</div>
+
+<div class="intel-panel hidden" id="pane-intel">
+  <div class="intel-panel-header">
+    <h2>Threat Intel Digest</h2>
+    <span class="intel-meta" id="intel-meta"></span>
+    <button class="secondary hidden" id="intel-view-case-btn" onclick="viewIntelCase()">View Case</button>
+    <button class="secondary hidden" id="intel-copy-btn" onclick="copyIntelReport()">Copy</button>
+    <button id="intel-run-btn" onclick="runDigest()">Run Digest</button>
+  </div>
+  <div class="intel-body" id="intel-body">
+    <div class="intel-empty" id="intel-empty">
+      <span>No threat intel digest yet</span>
+      <button onclick="runDigest()">Run First Digest</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay hidden" id="modal">
@@ -122,7 +193,10 @@
 <script>
 let activeCaseId = null;
 let activeStream = null;
+let activeTab = 'cases';
 let cases = {};
+let intelStream = null;
+let latestIntelCaseId = null;
 
 // ── Utils ──────────────────────────────────────────────────────────────────
 
@@ -140,6 +214,17 @@ function time_ago(ts) {
   return Math.floor(s/3600) + 'h ago';
 }
 
+// ── Tabs ──────────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  activeTab = name;
+  document.getElementById('tab-cases').classList.toggle('active', name === 'cases');
+  document.getElementById('tab-intel').classList.toggle('active', name === 'intel');
+  document.getElementById('pane-cases').classList.toggle('hidden', name !== 'cases');
+  document.getElementById('pane-intel').classList.toggle('hidden', name !== 'intel');
+  if (name === 'intel') renderIntelTab();
+}
+
 // ── API ───────────────────────────────────────────────────────────────────
 
 async function fetchCases() {
@@ -147,6 +232,7 @@ async function fetchCases() {
   const list = await res.json();
   list.forEach(c => { cases[c.id] = c; });
   renderList();
+  if (activeTab === 'intel') renderIntelTab();
 }
 
 async function submitTask(description) {
@@ -221,12 +307,22 @@ function renderStep(s) {
 }
 
 function renderFinal(output) {
+  const html = typeof marked !== 'undefined' ? marked.parse(output) : output.replace(/\n/g,'<br>');
   return `
     <div class="final-output">
-      <div class="final-output-header">Final Output</div>
-      <div class="final-output-body">${output}</div>
+      <div class="final-output-header">
+        <span>Final Report</span>
+        <span style="margin-left:auto;font-weight:400;color:var(--muted);cursor:pointer;font-size:10px" onclick="copyReport()">Copy</span>
+      </div>
+      <div class="final-output-body md" id="final-report">${html}</div>
     </div>
   `;
+}
+
+function copyReport() {
+  const el = document.getElementById('final-report');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText);
 }
 
 function toggleStep(index) {
@@ -281,6 +377,120 @@ function applyEvent(caseId, event) {
 
   if (caseId === activeCaseId) renderDetail(c);
   renderList();
+  if (activeTab === 'intel') renderIntelTab();
+}
+
+// ── Intel Tab ─────────────────────────────────────────────────────────────
+
+function intelCases() {
+  return Object.values(cases)
+    .filter(c => c.runbook_id === 'threat_intel_digest' ||
+                 (c.description || '').toLowerCase().includes('threat intel') ||
+                 (c.description || '').toLowerCase().includes('intel digest'))
+    .sort((a, b) => (b.started_at || 0) - (a.started_at || 0));
+}
+
+function renderIntelTab() {
+  const all = intelCases();
+  const running = all.find(c => c.status === 'running' || c.status === 'pending');
+  const latest = all.find(c => c.status === 'completed');
+
+  const meta = document.getElementById('intel-meta');
+  const body = document.getElementById('intel-body');
+  const empty = document.getElementById('intel-empty');
+  const viewBtn = document.getElementById('intel-view-case-btn');
+  const copyBtn = document.getElementById('intel-copy-btn');
+  const runBtn = document.getElementById('intel-run-btn');
+
+  if (running) {
+    latestIntelCaseId = running.id;
+    subscribeIntel(running.id);
+    runBtn.textContent = 'Running…';
+    runBtn.disabled = true;
+    viewBtn.classList.remove('hidden');
+    copyBtn.classList.add('hidden');
+
+    const stepRows = (running.steps || []).map(s => {
+      const cls = s.status === 'completed' ? 'done' : s.status === 'running' ? 'active' : 'pending';
+      return `<div class="intel-step ${cls}"><div class="dot"></div><span>${s.text}</span></div>`;
+    }).join('');
+
+    meta.textContent = 'Running…';
+    body.innerHTML = `
+      <div class="intel-running">
+        <div class="spinner"></div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:var(--accent);font-weight:500">Digest in progress</div>
+          <div class="intel-steps">${stepRows || '<div style="color:var(--muted);font-size:11px">Starting…</div>'}</div>
+        </div>
+      </div>
+      ${latest ? `<div class="md">${marked.parse(latest.final_output)}</div>` : '<div class="intel-empty" id="intel-empty"><span>Previous report will appear here when ready</span></div>'}
+    `;
+  } else if (latest) {
+    latestIntelCaseId = latest.id;
+    stopIntelStream();
+    runBtn.textContent = 'Run Digest';
+    runBtn.disabled = false;
+    viewBtn.classList.remove('hidden');
+    copyBtn.classList.remove('hidden');
+
+    const d = new Date((latest.completed_at || latest.started_at) * 1000);
+    meta.textContent = `Last run ${d.toLocaleString()}`;
+    body.innerHTML = `<div class="md" id="intel-report">${marked.parse(latest.final_output)}</div>`;
+  } else {
+    latestIntelCaseId = null;
+    stopIntelStream();
+    runBtn.textContent = 'Run Digest';
+    runBtn.disabled = false;
+    viewBtn.classList.add('hidden');
+    copyBtn.classList.add('hidden');
+    meta.textContent = '';
+    body.innerHTML = `<div class="intel-empty" id="intel-empty"><span>No threat intel digest yet</span><button onclick="runDigest()">Run First Digest</button></div>`;
+  }
+}
+
+function subscribeIntel(caseId) {
+  if (intelStream && latestIntelCaseId === caseId) return;
+  stopIntelStream();
+  const es = new EventSource(`/cases/${caseId}/stream`);
+  intelStream = es;
+  es.onmessage = (e) => {
+    const event = JSON.parse(e.data);
+    if (event.type === 'ping') return;
+    applyEvent(caseId, event);
+    if (activeTab === 'intel') renderIntelTab();
+    if (event.type === 'task_completed' || event.type === 'task_failed') stopIntelStream();
+  };
+  es.onerror = () => es.close();
+}
+
+function stopIntelStream() {
+  if (intelStream) { intelStream.close(); intelStream = null; }
+}
+
+async function runDigest() {
+  const desc = 'threat intel digest last 24 hours';
+  const res = await fetch('/cases', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({description: desc}),
+  });
+  const {case_id} = await res.json();
+  cases[case_id] = {id: case_id, description: desc, status: 'pending', steps: [], runbook_id: 'threat_intel_digest'};
+  renderList();
+  renderIntelTab();
+}
+
+function viewIntelCase() {
+  if (!latestIntelCaseId) return;
+  switchTab('cases');
+  openCase(latestIntelCaseId);
+}
+
+function copyIntelReport() {
+  const el = document.getElementById('intel-report');
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText);
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────

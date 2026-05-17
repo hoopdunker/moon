@@ -64,6 +64,7 @@ resource "aws_iam_role_policy" "moon_ci_ecr" {
           "ecs:UpdateService",
           "ecs:RegisterTaskDefinition",
           "ecs:DescribeTaskDefinition",
+          "ecs:TagResource",
         ]
         Resource = "*"
       },
