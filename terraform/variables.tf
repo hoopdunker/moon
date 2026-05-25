@@ -25,7 +25,7 @@ variable "desired_count" {
 
 variable "image_tag" {
   type    = string
-  default = "latest"
+  default = "4e765b724a4825b06ec9f232d716e8ec1966faf5"
 }
 
 variable "log_retention_days" {
@@ -33,9 +33,21 @@ variable "log_retention_days" {
   default = 30
 }
 
-variable "allowed_cidr" {
+variable "cloudflare_api_token" {
   type        = string
-  description = "CIDR allowed to reach port 8000. Restrict to your IP: $(curl -s ifconfig.me)/32"
+  sensitive   = true
+  description = "Cloudflare API token. Needs Zone:DNS:Edit, Tunnel:Edit, Access:Edit permissions on groot.work"
+}
+
+variable "cloudflare_account_id" {
+  type        = string
+  description = "Cloudflare account ID — find it in the dashboard URL: dash.cloudflare.com/<account_id>"
+}
+
+variable "owner_email" {
+  type        = string
+  default     = "chiraag.aval@gmail.com"
+  description = "Email address allowed through Cloudflare Access"
 }
 
 variable "moon_mock_tools" {

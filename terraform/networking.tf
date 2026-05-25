@@ -14,13 +14,7 @@ resource "aws_security_group" "moon" {
   description = "Moon ECS service"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    from_port   = 8000
-    to_port     = 8000
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_cidr]
-  }
-
+  # No inbound rules — all traffic arrives via Cloudflare Tunnel (outbound only)
   egress {
     from_port   = 0
     to_port     = 0

@@ -63,6 +63,11 @@ resource "aws_ecs_task_definition" "moon" {
       { name = "GITHUB_TOKEN",      valueFrom = "${data.aws_secretsmanager_secret.github_token.arn}:moon/github-token::" },
     ]
 
+    dependsOn = [{
+      containerName = "cloudflared"
+      condition     = "START"
+    }]
+
     healthCheck = {
       command     = ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/')\" 2>/dev/null || exit 1"]
       interval    = 30
@@ -77,6 +82,25 @@ resource "aws_ecs_task_definition" "moon" {
         "awslogs-group"         = aws_cloudwatch_log_group.moon.name
         "awslogs-region"        = var.aws_region
         "awslogs-stream-prefix" = "ecs"
+      }
+    }
+  },
+  {
+    name      = "cloudflared"
+    image     = "cloudflare/cloudflared:latest"
+    essential = false
+    command   = ["tunnel", "--no-autoupdate", "run"]
+
+    secrets = [
+      { name = "TUNNEL_TOKEN", valueFrom = "${aws_secretsmanager_secret.tunnel_token.arn}:tunnel-token::" }
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.moon.name
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "cloudflared"
       }
     }
   }])

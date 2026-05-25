@@ -23,3 +23,13 @@ output "log_group_name" {
   value       = aws_cloudwatch_log_group.moon.name
   description = "Tail logs: aws logs tail /ecs/moon --follow"
 }
+
+output "moon_url" {
+  value       = "https://moon.groot.work"
+  description = "Moon dashboard — protected by Cloudflare Access"
+}
+
+output "tunnel_id" {
+  value       = cloudflare_zero_trust_tunnel_cloudflared.moon.id
+  description = "Cloudflare Tunnel ID"
+}
