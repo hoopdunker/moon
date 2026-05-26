@@ -27,7 +27,6 @@ resource "aws_iam_role_policy" "moon_execution_secrets" {
       Effect = "Allow"
       Action = ["secretsmanager:GetSecretValue"]
       Resource = [
-        data.aws_secretsmanager_secret.anthropic_api_key.arn,
         data.aws_secretsmanager_secret.github_token.arn,
         aws_secretsmanager_secret.tunnel_token.arn,
       ]

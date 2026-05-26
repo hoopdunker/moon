@@ -21,10 +21,6 @@ resource "aws_cloudwatch_log_group" "moon" {
   tags              = local.tags
 }
 
-data "aws_secretsmanager_secret" "anthropic_api_key" {
-  name = "moon/anthropic-api-key"
-}
-
 data "aws_secretsmanager_secret" "github_token" {
   name = "moon/github-token"
 }
