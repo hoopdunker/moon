@@ -59,8 +59,7 @@ resource "aws_ecs_task_definition" "moon" {
     ]
 
     secrets = [
-      { name = "ANTHROPIC_API_KEY", valueFrom = "${data.aws_secretsmanager_secret.anthropic_api_key.arn}:anthropic-api-key::" },
-      { name = "GITHUB_TOKEN",      valueFrom = "${data.aws_secretsmanager_secret.github_token.arn}:moon/github-token::" },
+      { name = "GITHUB_TOKEN", valueFrom = "${data.aws_secretsmanager_secret.github_token.arn}:moon/github-token::" },
     ]
 
     dependsOn = [{

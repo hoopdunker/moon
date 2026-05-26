@@ -67,3 +67,17 @@ resource "aws_iam_role_policy" "moon_task_dynamodb" {
     }]
   })
 }
+
+resource "aws_iam_role_policy" "moon_task_bedrock" {
+  name = "moon-task-bedrock"
+  role = aws_iam_role.moon_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["bedrock:InvokeModel"]
+      Resource = "arn:aws:bedrock:*::foundation-model/anthropic.*"
+    }]
+  })
+}

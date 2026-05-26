@@ -7,13 +7,13 @@ from moon.models import Guideline, ResourceSelection, Skill, StepResult, Tool, T
 log = logging.getLogger(__name__)
 
 
-_client: anthropic.Anthropic | None = None
+_client: anthropic.AnthropicBedrock | None = None
 
 
-def _get_client() -> anthropic.Anthropic:
+def _get_client() -> anthropic.AnthropicBedrock:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY, timeout=config.LLM_TIMEOUT)
+        _client = anthropic.AnthropicBedrock(aws_region=config.BEDROCK_REGION)
     return _client
 
 
@@ -59,7 +59,7 @@ def execute_step(
     tool_calls_made: list[ToolCall] = []
 
     create_kwargs: dict = dict(
-        model=config.AGENT_MODEL,
+        model=config.resolve_model(resources.agent_model),
         max_tokens=config.MAX_TOKENS,
         system=system_prompt,
         messages=messages,

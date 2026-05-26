@@ -6,13 +6,13 @@ from moon.models import Guideline, ResourceSelection, Runbook, RunbookSelection,
 log = logging.getLogger(__name__)
 
 
-_client: anthropic.Anthropic | None = None
+_client: anthropic.AnthropicBedrock | None = None
 
 
-def _get_client() -> anthropic.Anthropic:
+def _get_client() -> anthropic.AnthropicBedrock:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY, timeout=config.LLM_TIMEOUT)
+        _client = anthropic.AnthropicBedrock(aws_region=config.BEDROCK_REGION)
     return _client
 
 
@@ -82,6 +82,12 @@ def select_runbook(task_description: str, runbooks: list[Runbook]) -> RunbookSel
     raise RuntimeError("Coordinator failed to select a runbook")
 
 
+_MODEL_MENU = "\n".join(
+    f"- {name}: {info['use_for']}"
+    for name, info in config.MODEL_REGISTRY.items()
+)
+
+
 def select_resources(
     step_text: str,
     step_index: int,
@@ -101,7 +107,7 @@ def select_resources(
         max_tokens=512,
         tools=[{
             "name": "select_resources",
-            "description": "Select the tools, skills, and guidelines needed for this step",
+            "description": "Select the tools, skills, guidelines, and model needed for this step",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -120,9 +126,14 @@ def select_resources(
                         "items": {"type": "string"},
                         "description": "Names of guidelines to follow",
                     },
-                    "reasoning": {"type": "string", "description": "Why these resources were selected"},
+                    "agent_model": {
+                        "type": "string",
+                        "enum": list(config.MODEL_REGISTRY.keys()),
+                        "description": f"Model tier for the agent executing this step:\n{_MODEL_MENU}",
+                    },
+                    "reasoning": {"type": "string", "description": "Why these resources and model were selected"},
                 },
-                "required": ["tool_names", "skill_names", "guideline_names", "reasoning"],
+                "required": ["tool_names", "skill_names", "guideline_names", "agent_model", "reasoning"],
             },
         }],
         tool_choice={"type": "tool", "name": "select_resources"},
@@ -132,7 +143,7 @@ def select_resources(
                 f"Task: {task_description}\n"
                 f"Step {step_index + 1}: {step_text}\n\n"
                 f"Available resources:\n{resource_index}\n\n"
-                "Select the resources needed for this step."
+                "Select the resources and model tier needed for this step."
             ),
         }],
     )

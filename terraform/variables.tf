@@ -57,12 +57,12 @@ variable "moon_mock_tools" {
 
 variable "moon_coordinator_model" {
   type    = string
-  default = "claude-haiku-4-5-20251001"
+  default = "anthropic.claude-3-haiku-20240307-v1:0"
 }
 
 variable "moon_agent_model" {
   type    = string
-  default = "claude-sonnet-4-6"
+  default = "anthropic.claude-3-5-sonnet-20241022-v2:0"
 }
 
 variable "github_repo" {

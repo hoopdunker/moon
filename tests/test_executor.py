@@ -34,6 +34,7 @@ def _step_result(index=0, text="step 1", output="done"):
 def test_execute_task_returns_run_result():
     with patch("moon.executor.load_catalog", return_value=_catalog()), \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", return_value=_step_result()):
         result = execute_task(Task(description="test task"))
 
@@ -45,6 +46,7 @@ def test_execute_task_returns_run_result():
 def test_execute_task_final_output_from_last_step():
     with patch("moon.executor.load_catalog", return_value=_catalog(steps=["step 1", "step 2"])), \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", side_effect=[
              _step_result(0, "step 1", "first output"),
              _step_result(1, "step 2", "final output"),
@@ -60,6 +62,7 @@ def test_execute_task_fires_all_event_types():
 
     with patch("moon.executor.load_catalog", return_value=_catalog()), \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", return_value=_step_result()):
         execute_task(Task(description="test"), on_event=lambda t, d: events.append(t))
 
@@ -69,6 +72,7 @@ def test_execute_task_fires_all_event_types():
 def test_execute_task_no_on_event_does_not_crash():
     with patch("moon.executor.load_catalog", return_value=_catalog()), \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", return_value=_step_result()):
         result = execute_task(Task(description="test"), on_event=None)
 
@@ -122,6 +126,7 @@ def test_execute_task_prior_context_grows_across_steps():
 
     with patch("moon.executor.load_catalog", return_value=_catalog(steps=["step 1", "step 2", "step 3"])), \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", side_effect=fake_execute_step):
         execute_task(Task(description="test"))
 
@@ -131,6 +136,7 @@ def test_execute_task_prior_context_grows_across_steps():
 def test_execute_task_passes_custom_catalogs_path(tmp_path):
     with patch("moon.executor.load_catalog", return_value=_catalog()) as mock_load, \
          patch("moon.executor.select_runbook", return_value=RunbookSelection(runbook_id="rb1", via_llm=False)), \
+         patch("moon.executor.select_resources", return_value=_resources()), \
          patch("moon.executor.execute_step", return_value=_step_result()):
         execute_task(Task(description="test"), catalogs_path=tmp_path)
 

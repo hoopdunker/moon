@@ -67,6 +67,7 @@ class ResourceSelection(BaseModel):
     tool_names: list[str]
     skill_names: list[str]
     guideline_names: list[str]
+    agent_model: str = "sonnet"
     reasoning: str = ""
 
 
