@@ -45,22 +45,20 @@ jobs:
       - name: Register new task definition and deploy
         run: |
           NEW_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.build.outputs.tag }}"
+          echo "Deploying image: $NEW_IMAGE"
 
-          # Fetch current task definition, strip read-only fields, update moon container image
           aws ecs describe-task-definition --task-definition $ECS_SERVICE \
             --query taskDefinition \
-            | jq 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
-                  | .containerDefinitions |= map(
-                      if .name == env.CONTAINER_NAME then .image = $ENV.NEW_IMAGE else . end
-                    )' \
+            | jq --arg image "$NEW_IMAGE" --arg container "$CONTAINER_NAME" \
+                'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+                 | .containerDefinitions |= map(if .name == $container then .image = $image else . end)' \
           > task-def.json
 
-          # Register new revision and deploy
           NEW_ARN=$(aws ecs register-task-definition \
             --cli-input-json file://task-def.json \
             --query 'taskDefinition.taskDefinitionArn' --output text)
 
-          echo "Deploying $NEW_ARN"
+          echo "Registered: $NEW_ARN"
           aws ecs update-service \
             --cluster $ECS_CLUSTER \
             --service $ECS_SERVICE \
