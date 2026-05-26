@@ -39,20 +39,33 @@ jobs:
           IMAGE_TAG=${{ github.sha }}
           docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Render new task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition-family: ${{ env.ECS_SERVICE }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build.outputs.image }}
+      - name: Register new task definition and deploy
+        run: |
+          NEW_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.build.outputs.tag }}"
 
-      - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          # Fetch current task definition, strip read-only fields, update moon container image
+          aws ecs describe-task-definition --task-definition $ECS_SERVICE \
+            --query taskDefinition \
+            | jq 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+                  | .containerDefinitions |= map(
+                      if .name == env.CONTAINER_NAME then .image = $ENV.NEW_IMAGE else . end
+                    )' \
+          > task-def.json
+
+          # Register new revision and deploy
+          NEW_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "Deploying $NEW_ARN"
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_SERVICE \
+            --task-definition "$NEW_ARN" \
+            --output json | jq '{status:.service.status, taskDef:.service.taskDefinition}'
+
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $ECS_SERVICE
