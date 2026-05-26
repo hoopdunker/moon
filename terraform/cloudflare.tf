@@ -27,6 +27,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "moon" {
       hostname = "moon.groot.work"
       service  = "http://localhost:8000"
     }
+    ingress_rule {
+      hostname = "intel.groot.work"
+      service  = "http://localhost:8000"
+    }
     # Catch-all — required by Cloudflare
     ingress_rule {
       service = "http_status:404"
@@ -56,6 +60,14 @@ resource "cloudflare_record" "moon" {
   proxied = true
 }
 
+resource "cloudflare_record" "intel" {
+  zone_id = data.cloudflare_zone.groot_work.id
+  name    = "intel"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.moon.id}.cfargotunnel.com"
+  type    = "CNAME"
+  proxied = true
+}
+
 # ── Cloudflare Access ─────────────────────────────────────────────────────────
 
 resource "cloudflare_zero_trust_access_application" "moon" {
@@ -68,6 +80,26 @@ resource "cloudflare_zero_trust_access_application" "moon" {
 
 resource "cloudflare_zero_trust_access_policy" "moon_allow" {
   application_id = cloudflare_zero_trust_access_application.moon.id
+  zone_id        = data.cloudflare_zone.groot_work.id
+  name           = "Allow owner"
+  precedence     = 1
+  decision       = "allow"
+
+  include {
+    email = [var.owner_email]
+  }
+}
+
+resource "cloudflare_zero_trust_access_application" "intel" {
+  zone_id          = data.cloudflare_zone.groot_work.id
+  name             = "Moon Intel"
+  domain           = "intel.groot.work"
+  type             = "self_hosted"
+  session_duration = "24h"
+}
+
+resource "cloudflare_zero_trust_access_policy" "intel_allow" {
+  application_id = cloudflare_zero_trust_access_application.intel.id
   zone_id        = data.cloudflare_zone.groot_work.id
   name           = "Allow owner"
   precedence     = 1

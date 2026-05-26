@@ -520,6 +520,7 @@ document.getElementById('search').addEventListener('input', renderList);
 // ── Boot ──────────────────────────────────────────────────────────────────
 fetchCases();
 setInterval(renderList, 15000); // refresh timestamps
+if (window.location.hostname === 'intel.groot.work') switchTab('intel');
 </script>
 </body>
 </html>
