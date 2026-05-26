@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       AWS_REGION: us-west-2
       ECR_REGISTRY: 489922706493.dkr.ecr.us-west-2.amazonaws.com
       ECR_REPOSITORY: moon
