@@ -1,19 +1,8 @@
 import logging
-import anthropic
-from moon import config
+from moon import config, llm
 from moon.models import Guideline, ResourceSelection, Runbook, RunbookSelection, Skill, Tool
 
 log = logging.getLogger(__name__)
-
-
-_client: anthropic.AnthropicBedrock | None = None
-
-
-def _get_client() -> anthropic.AnthropicBedrock:
-    global _client
-    if _client is None:
-        _client = anthropic.AnthropicBedrock(aws_region=config.BEDROCK_REGION)
-    return _client
 
 
 def _tag_match(task_description: str, runbooks: list[Runbook]) -> RunbookSelection | None:
@@ -51,13 +40,16 @@ def select_runbook(task_description: str, runbooks: list[Runbook]) -> RunbookSel
         for r in runbooks
     )
 
-    response = _get_client().messages.create(
-        model=config.COORDINATOR_MODEL,
-        max_tokens=512,
-        tools=[{
-            "name": "select_runbook",
-            "description": "Select the most appropriate runbook for the given task",
-            "input_schema": {
+    result = llm.converse(
+        model_id=config.COORDINATOR_MODEL,
+        messages=[{
+            "role": "user",
+            "content": [{"text": f"Task: {task_description}\n\nAvailable runbooks:\n{runbook_index}\n\nSelect the most appropriate runbook."}],
+        }],
+        tools=[llm.make_tool(
+            name="select_runbook",
+            description="Select the most appropriate runbook for the given task",
+            input_schema={
                 "type": "object",
                 "properties": {
                     "runbook_id": {"type": "string", "description": "ID of the selected runbook"},
@@ -65,17 +57,14 @@ def select_runbook(task_description: str, runbooks: list[Runbook]) -> RunbookSel
                 },
                 "required": ["runbook_id", "reasoning"],
             },
-        }],
-        tool_choice={"type": "tool", "name": "select_runbook"},
-        messages=[{
-            "role": "user",
-            "content": f"Task: {task_description}\n\nAvailable runbooks:\n{runbook_index}\n\nSelect the most appropriate runbook.",
-        }],
+        )],
+        force_tool="select_runbook",
+        max_tokens=512,
     )
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == "select_runbook":
-            selection = RunbookSelection(**block.input, via_llm=True)
+    for tu in result.tool_uses:
+        if tu.name == "select_runbook":
+            selection = RunbookSelection(**tu.input, via_llm=True)
             log.debug("runbook selected (LLM): %s — %s", selection.runbook_id, selection.reasoning)
             return selection
 
@@ -102,13 +91,21 @@ def select_resources(
         + "\n\nGUIDELINES:\n" + "\n".join(f"- {g.name}" for g in guidelines)
     )
 
-    response = _get_client().messages.create(
-        model=config.COORDINATOR_MODEL,
-        max_tokens=512,
-        tools=[{
-            "name": "select_resources",
-            "description": "Select the tools, skills, guidelines, and model needed for this step",
-            "input_schema": {
+    result = llm.converse(
+        model_id=config.COORDINATOR_MODEL,
+        messages=[{
+            "role": "user",
+            "content": [{"text": (
+                f"Task: {task_description}\n"
+                f"Step {step_index + 1}: {step_text}\n\n"
+                f"Available resources:\n{resource_index}\n\n"
+                "Select the resources and model tier needed for this step."
+            )}],
+        }],
+        tools=[llm.make_tool(
+            name="select_resources",
+            description="Select the tools, skills, guidelines, and model needed for this step",
+            input_schema={
                 "type": "object",
                 "properties": {
                     "tool_names": {
@@ -135,21 +132,13 @@ def select_resources(
                 },
                 "required": ["tool_names", "skill_names", "guideline_names", "agent_model", "reasoning"],
             },
-        }],
-        tool_choice={"type": "tool", "name": "select_resources"},
-        messages=[{
-            "role": "user",
-            "content": (
-                f"Task: {task_description}\n"
-                f"Step {step_index + 1}: {step_text}\n\n"
-                f"Available resources:\n{resource_index}\n\n"
-                "Select the resources and model tier needed for this step."
-            ),
-        }],
+        )],
+        force_tool="select_resources",
+        max_tokens=512,
     )
 
-    for block in response.content:
-        if block.type == "tool_use" and block.name == "select_resources":
-            return ResourceSelection(**block.input)
+    for tu in result.tool_uses:
+        if tu.name == "select_resources":
+            return ResourceSelection(**tu.input)
 
     raise RuntimeError(f"Coordinator failed to select resources for step {step_index}")

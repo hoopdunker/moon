@@ -1,20 +1,9 @@
 import json
 import logging
-import anthropic
-from moon import config, tool_registry
+from moon import config, llm, tool_registry
 from moon.models import Guideline, ResourceSelection, Skill, StepResult, Tool, ToolCall
 
 log = logging.getLogger(__name__)
-
-
-_client: anthropic.AnthropicBedrock | None = None
-
-
-def _get_client() -> anthropic.AnthropicBedrock:
-    global _client
-    if _client is None:
-        _client = anthropic.AnthropicBedrock(aws_region=config.BEDROCK_REGION)
-    return _client
 
 
 def _build_system_prompt(skills: list[Skill], guidelines: list[Guideline], tools: list[Tool]) -> str:
@@ -53,70 +42,72 @@ def execute_step(
         context_block = "## Prior Step Outputs\n\n" + "\n\n".join(entries) + "\n\n"
 
     task_block = f"## Task\n\n{task_description}\n\n" if task_description else ""
-    messages: list[dict] = [{"role": "user", "content": f"{task_block}{context_block}## Current Step\n\n{step_text}"}]
-    tool_defs = [{"name": t.name, "description": t.description, "input_schema": t.parameters} for t in tools]
+    user_text = f"{task_block}{context_block}## Current Step\n\n{step_text}"
+
+    messages: list[dict] = [{"role": "user", "content": [{"text": user_text}]}]
+    tool_defs = [
+        llm.make_tool(name=t.name, description=t.description, input_schema=t.parameters)
+        for t in tools
+    ]
     tools_by_name = {t.name: t for t in tools}
     tool_calls_made: list[ToolCall] = []
 
-    create_kwargs: dict = dict(
-        model=config.resolve_model(resources.agent_model),
-        max_tokens=config.MAX_TOKENS,
-        system=system_prompt,
-        messages=messages,
-    )
-    if tool_defs:
-        create_kwargs["tools"] = tool_defs
+    model_id = config.resolve_model(resources.agent_model)
 
     output = ""
     while True:
-        response = _get_client().messages.create(**create_kwargs)
+        result = llm.converse(
+            model_id=model_id,
+            messages=messages,
+            system=system_prompt,
+            tools=tool_defs or None,
+        )
 
-        if response.stop_reason == "end_turn":
-            output = next((b.text for b in response.content if b.type == "text"), "")
+        if result.stop_reason == "end_turn":
+            output = result.text
             break
 
-        if response.stop_reason == "tool_use":
-            messages.append({"role": "assistant", "content": response.content})
+        if result.stop_reason == "tool_use":
+            messages.append({"role": "assistant", "content": result.raw_content})
             tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    cache_key = f"{block.name}:{json.dumps(dict(block.input), sort_keys=True)}"
-                    if tool_cache is not None and cache_key in tool_cache:
-                        result = tool_cache[cache_key]
-                        log.debug("tool cache hit: %s %s", block.name, dict(block.input))
+            for tu in result.tool_uses:
+                cache_key = f"{tu.name}:{json.dumps(tu.input, sort_keys=True)}"
+                if tool_cache is not None and cache_key in tool_cache:
+                    tool_result = tool_cache[cache_key]
+                    log.debug("tool cache hit: %s %s", tu.name, tu.input)
+                else:
+                    log.info("tool call: %s %s", tu.name, tu.input)
+                    handler = tool_registry.get_handler(tu.name)
+                    if handler:
+                        try:
+                            tool_result = handler(**tu.input)
+                        except Exception as e:
+                            tool_result = f"Tool error: {e}"
+                            log.warning("tool error: %s — %s", tu.name, e)
+                    elif config.MOCK_TOOLS:
+                        tool_result = tools_by_name[tu.name].mock_response
+                        log.debug("tool mock: %s", tu.name)
                     else:
-                        log.info("tool call: %s %s", block.name, dict(block.input))
-                        handler = tool_registry.get_handler(block.name)
-                        if handler:
-                            try:
-                                result = handler(**block.input)
-                            except Exception as e:
-                                result = f"Tool error: {e}"
-                                log.warning("tool error: %s — %s", block.name, e)
-                        elif config.MOCK_TOOLS:
-                            result = tools_by_name[block.name].mock_response
-                            log.debug("tool mock: %s", block.name)
-                        else:
-                            result = f"Error: tool '{block.name}' is not implemented"
-                            log.warning("unimplemented tool called: %s", block.name)
-                        if tool_cache is not None:
-                            tool_cache[cache_key] = result
-                        log.debug("tool result: %s", result[:200])
-                    tool_calls_made.append(ToolCall(
-                        tool_name=block.name,
-                        input=dict(block.input),
-                        output=result,
-                    ))
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    })
+                        tool_result = f"Error: tool '{tu.name}' is not implemented"
+                        log.warning("unimplemented tool called: %s", tu.name)
+                    if tool_cache is not None:
+                        tool_cache[cache_key] = tool_result
+                    log.debug("tool result: %s", tool_result[:200])
+                tool_calls_made.append(ToolCall(
+                    tool_name=tu.name,
+                    input=tu.input,
+                    output=tool_result,
+                ))
+                tool_results.append({
+                    "toolResult": {
+                        "toolUseId": tu.id,
+                        "content": [{"text": tool_result}],
+                    }
+                })
             messages.append({"role": "user", "content": tool_results})
-            create_kwargs["messages"] = messages
             continue
 
-        output = next((b.text for b in response.content if b.type == "text"), "")
+        output = result.text
         break
 
     return StepResult(

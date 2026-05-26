@@ -77,7 +77,7 @@ resource "aws_iam_role_policy" "moon_task_bedrock" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["bedrock:InvokeModel"]
-      Resource = "arn:aws:bedrock:*::foundation-model/anthropic.*"
+      Resource = "arn:aws:bedrock:*::foundation-model/*"
     }]
   })
 }

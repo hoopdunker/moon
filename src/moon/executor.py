@@ -70,6 +70,12 @@ def execute_task(
                 guidelines=catalog.guidelines,
             )
 
+        log.info(
+            "[%s] step %d/%d model: %s — %s",
+            task.description[:40], i + 1, len(runbook.steps),
+            resources.agent_model,
+            resources.reasoning[:100] if resources.reasoning else "pre-declared",
+        )
         log.debug(
             "[%s] step %d resources: tools=%s skills=%s guidelines=%s",
             task.description[:40], i + 1, resources.tool_names, resources.skill_names, resources.guideline_names,

@@ -18,21 +18,34 @@ DYNAMO_TABLE: str = os.environ.get("MOON_DYNAMO_TABLE", "")
 DYNAMO_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
 DYNAMO_ENDPOINT_URL: str = os.environ.get("MOON_DYNAMO_ENDPOINT_URL", "")
 
-# Model registry: friendly name → Bedrock model ID + metadata for coordinator reasoning
+# Model registry: friendly name → Bedrock model ID + coordinator guidance
 MODEL_REGISTRY: dict[str, dict] = {
-    "haiku": {
+    "nova-micro": {
+        "bedrock_id": "amazon.nova-micro-v1:0",
+        "use_for": "cheapest, simple classification, boolean decisions, routing",
+    },
+    "nova-lite": {
+        "bedrock_id": "amazon.nova-lite-v1:0",
+        "use_for": "fast and cheap, data fetching, summarization, simple extraction",
+    },
+    "nova-pro": {
+        "bedrock_id": "amazon.nova-pro-v1:0",
+        "use_for": "balanced Nova, multi-step reasoning, tool-heavy tasks, analysis",
+    },
+    "claude-haiku": {
         "bedrock_id": "anthropic.claude-3-haiku-20240307-v1:0",
-        "use_for": "data fetching, summarization, simple extraction, fast tasks",
+        "use_for": "best-in-class cheap/fast, structured extraction, security triage",
     },
-    "sonnet": {
+    "claude-sonnet": {
         "bedrock_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-        "use_for": "analysis, correlation, tool-heavy tasks, most agent work",
+        "use_for": "strong reasoning and tool use, correlation, most agent work",
     },
-    "opus": {
+    "claude-opus": {
         "bedrock_id": "anthropic.claude-3-opus-20240229-v1:0",
-        "use_for": "complex multi-source synthesis, executive reports, nuanced reasoning",
+        "use_for": "hardest synthesis tasks, executive reports, nuanced multi-source reasoning",
     },
 }
+
 
 def resolve_model(name: str) -> str:
     """Resolve a friendly model name to its Bedrock model ID. Falls back to AGENT_MODEL."""
