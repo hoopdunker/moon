@@ -136,6 +136,53 @@
 
   .hidden { display: none !important; }
   ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Intel Dashboard (intel.groot.work) ──────────────────────────────── */
+  #intel-dashboard { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .id-header { padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; background: var(--surface); }
+  .id-header-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .id-header-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .id-header-right { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .id-run-btn { background: var(--accent); color: #fff; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; }
+  .id-run-btn:hover { opacity: 0.85; }
+  .id-run-btn:disabled { opacity: 0.5; cursor: default; }
+  .id-metrics { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg); }
+  .id-metric { flex: 1; padding: 12px 20px; border-right: 1px solid var(--border); }
+  .id-metric:last-child { border-right: none; }
+  .id-metric-val { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+  .id-metric-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+  .id-metric.kev .id-metric-val { color: var(--red); }
+  .id-metric.camp .id-metric-val { color: var(--accent); }
+  .id-metric.breach .id-metric-val { color: var(--yellow); }
+  .id-scroll { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .id-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .id-card-title { padding: 8px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--bg); }
+  .id-card-body { padding: 16px; font-size: 12px; }
+  .id-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .id-running-card { background: #0d1a2d; border: 1px solid var(--accent); border-radius: 8px; padding: 18px 20px; }
+  .id-running-header { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--accent); font-weight: 500; margin-bottom: 14px; }
+  .id-spinner { width: 13px; height: 13px; border: 2px solid #1c3a5e; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  .id-steps { display: flex; flex-direction: column; gap: 5px; }
+  .id-step { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--muted); }
+  .id-step .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .id-step.done .dot { background: var(--green); }
+  .id-step.active .dot { background: var(--accent); animation: pulse 1.2s infinite; }
+  .id-step.active { color: var(--text); }
+  .id-step.pending .dot { background: var(--border); }
+  .id-empty-dash { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 80px 20px; color: var(--muted); text-align: center; }
+  .id-empty-dash h3 { font-size: 15px; color: var(--text); font-weight: 500; margin: 8px 0 4px; }
+  .id-empty-dash p { font-size: 12px; max-width: 280px; }
+  .id-more { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  .id-more summary { padding: 10px 16px; cursor: pointer; font-size: 11px; color: var(--muted); user-select: none; list-style: none; }
+  .id-more summary::-webkit-details-marker { display: none; }
+  .id-more summary:hover { color: var(--text); }
+  .id-more[open] summary { border-bottom: 1px solid var(--border); }
+  .id-more-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .cvss-badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .cvss-critical { background: rgba(248,81,73,0.18); color: var(--red); }
+  .cvss-high { background: rgba(210,153,34,0.18); color: var(--yellow); }
+  .cvss-medium { background: rgba(56,139,253,0.18); color: var(--accent); }
+  .kev-pill { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 700; background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); margin-right: 4px; }
 </style>
 </head>
 <body>
@@ -175,6 +222,76 @@
     <div class="intel-empty" id="intel-empty">
       <span>No threat intel digest yet</span>
       <button onclick="runDigest()">Run First Digest</button>
+    </div>
+  </div>
+</div>
+
+<div id="intel-dashboard" class="hidden">
+  <div class="id-header">
+    <div>
+      <div class="id-header-title">Threat Intel</div>
+      <div class="id-header-sub" id="id-status">Loading…</div>
+    </div>
+    <div class="id-header-right">
+      <button class="id-run-btn" id="id-run-btn" onclick="idRunDigest()">Run Now</button>
+    </div>
+  </div>
+  <div class="id-metrics">
+    <div class="id-metric"><div class="id-metric-val" id="id-m-cves">—</div><div class="id-metric-lbl">CVEs</div></div>
+    <div class="id-metric kev"><div class="id-metric-val" id="id-m-kev">—</div><div class="id-metric-lbl">KEV</div></div>
+    <div class="id-metric camp"><div class="id-metric-val" id="id-m-campaigns">—</div><div class="id-metric-lbl">Campaigns</div></div>
+    <div class="id-metric breach"><div class="id-metric-val" id="id-m-breaches">—</div><div class="id-metric-lbl">Breaches</div></div>
+    <div class="id-metric"><div class="id-metric-val" id="id-m-malware">—</div><div class="id-metric-lbl">Malware Fams</div></div>
+  </div>
+  <div class="id-scroll">
+    <div id="id-running-block" class="hidden"></div>
+    <div id="id-content" class="hidden">
+      <div class="id-card">
+        <div class="id-card-title">Executive Summary</div>
+        <div class="id-card-body md" id="id-summary"></div>
+      </div>
+      <div class="id-row">
+        <div class="id-card">
+          <div class="id-card-title">Threat Actors</div>
+          <div class="id-card-body md" id="id-actors"></div>
+        </div>
+        <div class="id-card">
+          <div class="id-card-title">Top Vulnerabilities</div>
+          <div class="id-card-body md" id="id-vulns"></div>
+        </div>
+      </div>
+      <div class="id-card">
+        <div class="id-card-title">Top Breaches</div>
+        <div class="id-card-body md" id="id-breaches"></div>
+      </div>
+      <div class="id-row">
+        <div class="id-card">
+          <div class="id-card-title">Recommended Actions</div>
+          <div class="id-card-body md" id="id-actions"></div>
+        </div>
+        <div class="id-card">
+          <div class="id-card-title">Active IOCs</div>
+          <div class="id-card-body md" id="id-iocs"></div>
+        </div>
+      </div>
+      <details class="id-more">
+        <summary>▶ More: Malware · Packages · TTPs · Patching · Gaps</summary>
+        <div class="id-more-content">
+          <div class="id-card"><div class="id-card-title">Malware Families</div><div class="id-card-body md" id="id-malware"></div></div>
+          <div class="id-card"><div class="id-card-title">Affected Packages</div><div class="id-card-body md" id="id-packages"></div></div>
+          <div class="id-card"><div class="id-card-title">MITRE ATT&amp;CK TTPs</div><div class="id-card-body md" id="id-ttps"></div></div>
+          <div class="id-card"><div class="id-card-title">CVE Patching Priorities</div><div class="id-card-body md" id="id-patching"></div></div>
+          <div class="id-card"><div class="id-card-title">Intelligence Gaps</div><div class="id-card-body md" id="id-gaps"></div></div>
+        </div>
+      </details>
+    </div>
+    <div id="id-empty" class="hidden">
+      <div class="id-empty-dash">
+        <div style="font-size:40px">🛡</div>
+        <h3>No threat intel yet</h3>
+        <p>Daily digests run automatically at 6 AM UTC</p>
+        <button class="id-run-btn" onclick="idRunDigest()" style="margin-top:12px">Run First Digest</button>
+      </div>
     </div>
   </div>
 </div>
@@ -493,6 +610,175 @@ function copyIntelReport() {
   navigator.clipboard.writeText(el.innerText);
 }
 
+// ── Intel Dashboard (intel.groot.work) ───────────────────────────────────
+
+let idCaseId = null;
+let idStream = null;
+
+async function loadIntelDashboard() {
+  try {
+    const res = await fetch('/intel/latest');
+    const data = await res.json();
+    renderIntelDashboard(data);
+  } catch(e) {
+    document.getElementById('id-status').textContent = 'Failed to load intel';
+  }
+}
+
+function renderIntelDashboard(data) {
+  const runningBlock = document.getElementById('id-running-block');
+  const content     = document.getElementById('id-content');
+  const empty       = document.getElementById('id-empty');
+  const runBtn      = document.getElementById('id-run-btn');
+  const status      = document.getElementById('id-status');
+
+  runningBlock.classList.add('hidden');
+  content.classList.add('hidden');
+  empty.classList.add('hidden');
+
+  if (!data || data.status === 'none') {
+    empty.classList.remove('hidden');
+    status.textContent = 'No digest yet — runs daily at 6 AM UTC';
+    return;
+  }
+
+  idCaseId = data.id;
+  const ts = data.completed_at || data.started_at;
+  const d  = ts ? new Date(ts * 1000) : null;
+
+  if (data.status === 'running' || data.status === 'pending') {
+    runBtn.textContent = 'Running…';
+    runBtn.disabled = true;
+    status.textContent = d ? `Started ${d.toLocaleTimeString()}` : 'Starting…';
+
+    const steps = data.steps || [];
+    const stepRows = steps.length
+      ? steps.map(s => {
+          const cls = s.status === 'completed' ? 'done' : s.status === 'running' ? 'active' : 'pending';
+          return `<div class="id-step ${cls}"><div class="dot"></div><span>${s.text}</span></div>`;
+        }).join('')
+      : '<div style="color:var(--muted);font-size:11px;padding:2px 0">Starting…</div>';
+
+    runningBlock.innerHTML = `
+      <div class="id-running-card">
+        <div class="id-running-header"><div class="id-spinner"></div>Digest in progress</div>
+        <div class="id-steps">${stepRows}</div>
+      </div>`;
+    runningBlock.classList.remove('hidden');
+    idSubscribe(data.id);
+
+    if (data.sections) { populateIntelSections(data.sections); content.classList.remove('hidden'); }
+  } else if (data.status === 'completed') {
+    idStopStream();
+    runBtn.textContent = 'Run Now';
+    runBtn.disabled = false;
+    status.textContent = d ? `Last run ${d.toLocaleDateString()} at ${d.toLocaleTimeString()}` : 'Completed';
+    if (data.sections) {
+      populateIntelSections(data.sections);
+      parseIntelMetrics(data.sections['Metrics Snapshot'] || '');
+    }
+    content.classList.remove('hidden');
+  } else {
+    runBtn.textContent = 'Run Now';
+    runBtn.disabled = false;
+    status.textContent = data.error ? `Error: ${data.error}` : 'No digest available';
+    empty.classList.remove('hidden');
+  }
+}
+
+function populateIntelSections(sections) {
+  const map = {
+    'Executive Summary':       'id-summary',
+    'Top Nation-State Actors': 'id-actors',
+    'Top Vulnerabilities':     'id-vulns',
+    'Top Breaches':            'id-breaches',
+    'Recommended Actions':     'id-actions',
+    'Active IOCs':             'id-iocs',
+    'Top Malware Families':    'id-malware',
+    'Top Affected Packages':   'id-packages',
+    'Top MITRE ATT&CK TTPs':   'id-ttps',
+    'CVE Patching Priorities': 'id-patching',
+    'Intelligence Gaps':       'id-gaps',
+  };
+  const none = '<span style="color:var(--muted);font-size:11px">None observed this period.</span>';
+  for (const [name, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const text = sections[name];
+    el.innerHTML = text ? marked.parse(text) : none;
+    if (text) enhanceIntelTable(el);
+  }
+}
+
+function enhanceIntelTable(el) {
+  el.querySelectorAll('td').forEach(td => {
+    const txt = td.textContent.trim();
+    if (/^\d+\.\d+$/.test(txt)) {
+      const score = parseFloat(txt);
+      const cls = score >= 9 ? 'cvss-critical' : score >= 7 ? 'cvss-high' : 'cvss-medium';
+      td.innerHTML = `<span class="cvss-badge ${cls}">${txt}</span>`;
+      return;
+    }
+    if (/^Yes\b/.test(txt) && td.previousElementSibling) {
+      const rest = txt.slice(3).trim();
+      td.innerHTML = `<span class="kev-pill">KEV</span>${rest ? rest : ''}`;
+      return;
+    }
+    if (!td.classList.contains('id-colored')) {
+      if (txt === 'High')   { td.style.color = 'var(--green)';  td.classList.add('id-colored'); }
+      if (txt === 'Medium') { td.style.color = 'var(--yellow)'; td.classList.add('id-colored'); }
+    }
+  });
+}
+
+function parseIntelMetrics(line) {
+  const set = (id, re) => { const m = line.match(re); if (m) document.getElementById(id).textContent = m[1]; };
+  set('id-m-cves',      /(\d+) CVEs/);
+  set('id-m-kev',       /\((\d+) KEV\)/);
+  set('id-m-campaigns', /(\d+) nation-state campaigns/);
+  set('id-m-breaches',  /(\d+) breaches/);
+  set('id-m-malware',   /(\d+) malware famil/i);
+}
+
+function idSubscribe(caseId) {
+  if (idStream && idCaseId === caseId) return;
+  idStopStream();
+  const es = new EventSource(`/cases/${caseId}/stream`);
+  idStream = es;
+  es.onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === 'ping') return;
+    applyEvent(caseId, ev);
+    if (ev.type === 'task_completed' || ev.type === 'task_failed') {
+      idStopStream();
+      loadIntelDashboard();
+    } else {
+      const c = cases[caseId];
+      if (c) renderIntelDashboard(c);
+    }
+  };
+  es.onerror = () => es.close();
+}
+
+function idStopStream() {
+  if (idStream) { idStream.close(); idStream = null; }
+}
+
+async function idRunDigest() {
+  const desc = 'threat intel digest last 24 hours';
+  document.getElementById('id-run-btn').textContent = 'Starting…';
+  document.getElementById('id-run-btn').disabled = true;
+  const res = await fetch('/cases', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({description: desc}),
+  });
+  const {case_id} = await res.json();
+  cases[case_id] = {id: case_id, description: desc, status: 'pending', steps: [], runbook_id: 'threat_intel_digest', started_at: Date.now()/1000};
+  idCaseId = case_id;
+  renderIntelDashboard(cases[case_id]);
+}
+
 // ── Modal ─────────────────────────────────────────────────────────────────
 
 document.getElementById('new-btn').onclick = () => {
@@ -518,9 +804,19 @@ document.getElementById('modal').addEventListener('click', (e) => {
 document.getElementById('search').addEventListener('input', renderList);
 
 // ── Boot ──────────────────────────────────────────────────────────────────
-fetchCases();
-setInterval(renderList, 15000); // refresh timestamps
-if (window.location.hostname === 'intel.groot.work') switchTab('intel');
+const isIntelDomain = window.location.hostname === 'intel.groot.work';
+if (isIntelDomain) {
+  document.querySelector('header').classList.add('hidden');
+  document.querySelector('nav.tabs').classList.add('hidden');
+  document.getElementById('pane-cases').classList.add('hidden');
+  document.getElementById('intel-dashboard').classList.remove('hidden');
+  document.title = 'Threat Intel';
+  loadIntelDashboard();
+  setInterval(loadIntelDashboard, 300000); // auto-refresh every 5 min
+} else {
+  fetchCases();
+  setInterval(renderList, 15000);
+}
 </script>
 </body>
 </html>

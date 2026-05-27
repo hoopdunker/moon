@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -23,9 +24,56 @@ _pool = ThreadPoolExecutor(max_workers=config.MAX_WORKERS)
 _catalogs_path: Optional[Path] = None
 
 
+def _parse_intel_sections(markdown: str) -> dict[str, str]:
+    sections: dict[str, str] = {}
+    current: str | None = None
+    buf: list[str] = []
+    for line in markdown.splitlines():
+        if line.startswith("## "):
+            if current is not None:
+                sections[current] = "\n".join(buf).strip()
+            current = line[3:].strip()
+            buf = []
+        elif current is not None:
+            buf.append(line)
+    if current is not None:
+        sections[current] = "\n".join(buf).strip()
+    return sections
+
+
+async def _schedule_daily_intel() -> None:
+    while True:
+        now = datetime.now(timezone.utc)
+        target = now.replace(hour=config.INTEL_SCHEDULE_HOUR, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        sleep_secs = (target - now).total_seconds()
+        logger.info("Intel digest scheduled in %.0f s (at %s UTC)", sleep_secs, target.strftime("%H:%M"))
+        await asyncio.sleep(sleep_secs)
+        today_ts = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        already_ran = any(
+            (c.runbook_id == "threat_intel_digest" or "threat intel" in c.description.lower())
+            and c.started_at >= today_ts
+            for c in store.all()
+        )
+        if not already_ran:
+            logger.info("Running scheduled intel digest")
+            case = store.create("threat intel digest last 24 hours")
+            task = Task(description="threat intel digest last 24 hours", input_data={})
+
+            def _run(_case=case, _task=task) -> None:
+                try:
+                    execute_task(_task, _catalogs_path, on_event=_case.apply)
+                except Exception as e:
+                    _case.apply("task_failed", {"error": str(e)})
+
+            _pool.submit(_run)
+
+
 @app.on_event("startup")
 async def startup() -> None:
     store_module.set_loop(asyncio.get_event_loop())
+    asyncio.create_task(_schedule_daily_intel())
 
 
 class TaskRequest(BaseModel):
@@ -85,6 +133,28 @@ async def stream_case(case_id: str) -> StreamingResponse:
 
     return StreamingResponse(generator(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/intel/latest")
+async def intel_latest() -> dict:
+    def _is_intel(c) -> bool:
+        return c.runbook_id == "threat_intel_digest" or "threat intel" in c.description.lower()
+
+    all_cases = store.all()
+    intel = [c for c in all_cases if _is_intel(c)]
+    if not intel:
+        return {"status": "none"}
+
+    running = next((c for c in intel if c.status in ("running", "pending")), None)
+    completed = next((c for c in intel if c.status == "completed"), None)
+    target = running or completed
+    if not target:
+        return {"status": "none"}
+
+    result = target.to_dict()
+    if target.final_output:
+        result["sections"] = _parse_intel_sections(target.final_output)
+    return result
 
 
 @app.get("/health")

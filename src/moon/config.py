@@ -17,6 +17,7 @@ MOCK_TOOLS: bool = os.environ.get("MOON_MOCK_TOOLS", "true").lower() == "true"
 DYNAMO_TABLE: str = os.environ.get("MOON_DYNAMO_TABLE", "")
 DYNAMO_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
 DYNAMO_ENDPOINT_URL: str = os.environ.get("MOON_DYNAMO_ENDPOINT_URL", "")
+INTEL_SCHEDULE_HOUR: int = int(os.environ.get("MOON_INTEL_SCHEDULE_HOUR", "6"))
 
 # Model registry: friendly name → Bedrock model ID + coordinator guidance
 MODEL_REGISTRY: dict[str, dict] = {
