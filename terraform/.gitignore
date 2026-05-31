@@ -1,8 +1,0 @@
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfvars
-*.tfvars.local
-override.tf
-override.tf.json
-secrets.tfvars
