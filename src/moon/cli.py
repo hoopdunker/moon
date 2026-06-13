@@ -60,6 +60,8 @@ def run(
 ):
     """Execute a single security task."""
     logging_config.setup(debug=debug)
+    from moon import llm
+    llm.init_models()
     input_data = json.loads(input_file.read_text()) if input_file else {}
     task_obj = Task(description=task, input_data=input_data)
 
@@ -103,6 +105,8 @@ def batch(
 ):
     """Execute multiple tasks in parallel."""
     logging_config.setup(debug=debug)
+    from moon import llm
+    llm.init_models()
 
     raw = json.loads(tasks_file.read_text())
     tasks = [Task(**t) for t in raw]

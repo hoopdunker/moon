@@ -6,15 +6,15 @@ from moon.models import ResourceSelection
 # ── config.resolve_model ──────────────────────────────────────────────────────
 
 def test_resolve_model_claude_haiku():
-    assert config.resolve_model("claude-haiku") == "anthropic.claude-3-haiku-20240307-v1:0"
+    assert config.resolve_model("claude-haiku") == "us.anthropic.claude-3-5-haiku-20241022-v1:0"
 
 
 def test_resolve_model_claude_sonnet():
-    assert config.resolve_model("claude-sonnet") == "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    assert config.resolve_model("claude-sonnet") == "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 
 def test_resolve_model_claude_opus():
-    assert config.resolve_model("claude-opus") == "anthropic.claude-3-opus-20240229-v1:0"
+    assert config.resolve_model("claude-opus") == "us.anthropic.claude-3-opus-20240229-v1:0"
 
 
 def test_resolve_model_nova_micro():
@@ -42,7 +42,7 @@ def test_model_registry_all_entries_have_required_fields():
 def test_model_registry_claude_models_have_anthropic_prefix():
     for name, info in config.MODEL_REGISTRY.items():
         if name.startswith("claude"):
-            assert info["bedrock_id"].startswith("anthropic."), f"{name} should have anthropic. prefix"
+            assert "anthropic." in info["bedrock_id"], f"{name} should contain anthropic. in bedrock_id"
 
 
 def test_model_registry_nova_models_have_amazon_prefix():

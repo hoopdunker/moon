@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -70,9 +71,29 @@ async def _schedule_daily_intel() -> None:
             _pool.submit(_run)
 
 
+_health_ok: bool = True
+_health_checked_at: float = 0.0
+_HEALTH_TTL = 300  # re-probe models every 5 minutes
+
+
+def _check_models() -> bool:
+    from moon import llm
+    try:
+        llm.init_models()
+        return True
+    except RuntimeError:
+        return False
+
+
 @app.on_event("startup")
 async def startup() -> None:
+    global _health_ok, _health_checked_at
     store_module.set_loop(asyncio.get_event_loop())
+    ok = await asyncio.to_thread(_check_models)
+    _health_ok = ok
+    _health_checked_at = time.monotonic()
+    if not ok:
+        logger.error("No live Bedrock models found — service will be unhealthy")
     asyncio.create_task(_schedule_daily_intel())
 
 
@@ -159,7 +180,18 @@ async def intel_latest() -> dict:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok"}
+    global _health_ok, _health_checked_at
+    if time.monotonic() - _health_checked_at > _HEALTH_TTL:
+        ok = await asyncio.to_thread(_check_models)
+        _health_ok = ok
+        _health_checked_at = time.monotonic()
+    if not _health_ok:
+        raise HTTPException(status_code=503, detail="No live Bedrock models available")
+    return {
+        "status": "ok",
+        "coordinator_model": config.COORDINATOR_MODEL,
+        "agent_model": config.AGENT_MODEL,
+    }
 
 
 @app.get("/", response_class=HTMLResponse)

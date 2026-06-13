@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass, field
 
 import boto3
+from botocore.exceptions import ClientError
 
 from moon import config
 
@@ -35,6 +36,40 @@ class ConverseResult:
     text: str
     tool_uses: list[ToolUse] = field(default_factory=list)
     raw_content: list[dict] = field(default_factory=list)  # for appending to message history
+
+
+def probe_model(model_id: str) -> bool:
+    """Return True if model_id responds on Bedrock, False if EOL or unavailable."""
+    try:
+        _get_client().converse(
+            modelId=model_id,
+            messages=[{"role": "user", "content": [{"text": "hi"}]}],
+            inferenceConfig={"maxTokens": 1},
+        )
+        config.LIVE_MODELS.add(model_id)
+        return True
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "AccessDeniedException":
+            raise  # IAM misconfiguration — don't swallow
+        log.debug("probe_model %s: %s", model_id, code)
+        return False
+
+
+def resolve_live_model(candidates: list[str]) -> str:
+    """Return the first candidate model that is live on Bedrock."""
+    for model_id in candidates:
+        if probe_model(model_id):
+            log.info("live model selected: %s", model_id)
+            return model_id
+    raise RuntimeError(f"No live Bedrock models found in candidates: {candidates}")
+
+
+def init_models() -> None:
+    """Probe candidates and set config.COORDINATOR_MODEL / config.AGENT_MODEL to live models."""
+    config.COORDINATOR_MODEL = resolve_live_model(config.COORDINATOR_MODEL_CANDIDATES)
+    config.AGENT_MODEL = resolve_live_model(config.AGENT_MODEL_CANDIDATES)
+    log.info("models ready — coordinator=%s agent=%s", config.COORDINATOR_MODEL, config.AGENT_MODEL)
 
 
 def make_tool(name: str, description: str, input_schema: dict) -> dict:
