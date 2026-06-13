@@ -14,7 +14,7 @@ COORDINATOR_MODEL_CANDIDATES: list[str] = [m for m in [
     os.environ.get("MOON_COORDINATOR_MODEL"),
     "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-    "anthropic.claude-3-5-haiku-20241022-v1:0",
+    "us.amazon.nova-lite-v1:0",
     "amazon.nova-lite-v1:0",
 ] if m]
 
@@ -22,7 +22,7 @@ AGENT_MODEL_CANDIDATES: list[str] = [m for m in [
     os.environ.get("MOON_AGENT_MODEL"),
     "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-    "anthropic.claude-3-5-haiku-20241022-v1:0",
+    "us.amazon.nova-pro-v1:0",
     "amazon.nova-pro-v1:0",
 ] if m]
 
@@ -48,15 +48,15 @@ LIVE_MODELS: set[str] = set()
 # Model registry: friendly name → Bedrock model ID + coordinator guidance
 MODEL_REGISTRY: dict[str, dict] = {
     "nova-micro": {
-        "bedrock_id": "amazon.nova-micro-v1:0",
+        "bedrock_id": "us.amazon.nova-micro-v1:0",
         "use_for": "cheapest, simple classification, boolean decisions, routing",
     },
     "nova-lite": {
-        "bedrock_id": "amazon.nova-lite-v1:0",
+        "bedrock_id": "us.amazon.nova-lite-v1:0",
         "use_for": "fast and cheap, data fetching, summarization, simple extraction",
     },
     "nova-pro": {
-        "bedrock_id": "amazon.nova-pro-v1:0",
+        "bedrock_id": "us.amazon.nova-pro-v1:0",
         "use_for": "balanced Nova, multi-step reasoning, tool-heavy tasks, analysis",
     },
     "claude-haiku": {
