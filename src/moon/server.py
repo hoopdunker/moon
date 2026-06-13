@@ -81,7 +81,8 @@ def _check_models() -> bool:
     try:
         llm.init_models()
         return True
-    except RuntimeError:
+    except Exception as e:
+        log.error("model init failed: %s", e)
         return False
 
 
