@@ -90,6 +90,14 @@ RSS_SOURCES = {
     "trail_of_bits": "https://blog.trailofbits.com/feed",
     "adversa_ai": "https://adversa.ai/blog/rss/",
     "wiz_research": "https://www.wiz.io/blog/rss",
+    # Cloud & application security
+    "zscaler": "https://www.zscaler.com/blogs/security-research/rss",
+    "upwind": "https://www.upwind.io/feed.xml",
+    "aikido": "https://www.aikido.dev/blog/rss",
+    # Supply chain & CI/CD security
+    "stepsecurity": "https://www.stepsecurity.io/blog/rss.xml",
+    # Crypto / financial news
+    "coindesk": "https://www.coindesk.com/arc/outboundfeeds/rss/",
 }
 
 _HEADERS = {"User-Agent": "Moon-ThreatIntel/1.0"}

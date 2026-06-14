@@ -15,8 +15,12 @@ steps:
   - text: >
       Fetch general security news headlines from the last 48 hours using sources:
       bleepingcomputer, hackernews, krebsonsecurity, sans_isc, darkreading, securityweek,
-      the_record, cyberscoop. Set hours_back=48. Summarise the top stories — focus on
-      active exploits, notable breaches, and high-impact disclosures.
+      the_record, cyberscoop. Set hours_back=48. Summarise the top stories.
+      FOCUS ONLY ON: attacks targeting private companies, enterprises, financial institutions,
+      critical infrastructure, government agencies, and defence organisations.
+      SKIP: schools, universities, hospitals, non-profits, and individual victims unless
+      the attack technique is novel or the threat actor is nation-state linked.
+      For each story note: victim sector, attack type, threat actor (if known), and impact.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
@@ -24,7 +28,9 @@ steps:
       Fetch nation-state and APT threat intelligence from the last 7 days using sources:
       recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk, unit42, talos,
       securelist, sentinelone. Set hours_back=168. Identify active threat actor campaigns,
-      targeted sectors, TTPs observed, and any attribution. Note which groups are most active.
+      targeted sectors, TTPs observed, and any attribution. Focus on campaigns targeting
+      technology companies, financial sector, defence, and critical infrastructure.
+      Note which groups are most active and their primary targets.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
@@ -49,29 +55,32 @@ steps:
       Fetch recent critical and high-severity CVEs from the last 7 days (hours_back=168).
       Identify which are in the CISA KEV catalog (actively exploited), note their deadlines,
       and rank the top patching priorities with affected products, version ranges, and fix versions.
+      Focus on CVEs affecting enterprise software, cloud infrastructure, network devices,
+      and widely-deployed open-source components.
     tools: [fetch_latest_cves]
     skills: [threat_intel_analyst]
 
   - text: >
       Fetch all active threat feeds: recent malware samples, malicious URLs, and CISA
       advisories. For each malware sample extract the family name, type, delivery method,
-      and any C2 infrastructure. Defang all URLs and domains.
+      and any C2 infrastructure. Defang all URLs and domains. Focus on malware families
+      targeting enterprise environments (info-stealers, ransomware, RATs, loaders).
     tools: [fetch_threat_feeds]
     skills: [threat_intel_analyst]
 
   - text: >
       Fetch the environment profile, then synthesise all gathered intelligence into a
       structured threat intelligence brief following the intel_report guideline exactly.
-      Produce every section in order: metrics snapshot, executive summary, top nation-state
+      If no environment profile is configured, produce a generic brief without org-specific
+      asset mapping — skip sections that require inventory cross-referencing.
+      Produce sections in order: metrics snapshot, executive summary, top nation-state
       actors table (with MITRE ATT&CK TTP IDs), top vulnerabilities table, top malware
-      families table, top breaches table, top affected packages table, top MITRE TTPs table,
-      CVE patching priorities table, active IOCs grouped by type, recommended actions, and
-      intelligence gaps. For every finding: cross-reference the organisation's asset inventory
-      (mark CVEs as Not in inventory if the product is not deployed), map IOCs and TTPs to
-      the specific log sources available for hunting, reference controls that detect or
-      mitigate each threat, flag control gaps that increase exposure, and compare KEV
-      deadlines against the organisation's patch SLAs. Connect the dots across sections
-      where a single campaign spans multiple threat categories.
+      families table, top breaches table (companies and enterprises only), top affected
+      packages table, top MITRE TTPs table, CVE patching priorities table, active IOCs
+      grouped by type, recommended actions, and intelligence gaps.
+      If environment profile is available: cross-reference CVEs against asset inventory,
+      map IOCs to log sources for hunting, flag control gaps, and compare KEV deadlines
+      against patch SLAs. Connect the dots where a single campaign spans multiple categories.
     tools: [get_environment_profile]
     skills: [threat_intel_analyst, intel_editor]
     guidelines: [intel_report, output_format]

@@ -15,7 +15,7 @@ def get_environment_profile(catalogs_path: Path | None = None) -> str:
 
     raw = yaml.safe_load(path.read_text())
     if not raw:
-        return "environment.yaml is empty."
+        return "No environment profile configured. Produce a generic threat intelligence brief without org-specific asset mapping or control gap analysis."
 
     sections: list[str] = []
 

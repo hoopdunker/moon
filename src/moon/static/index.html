@@ -335,7 +335,6 @@ function time_ago(ts) {
 function switchTab(name) {
   activeTab = name;
   document.getElementById('tab-cases').classList.toggle('active', name === 'cases');
-  document.getElementById('tab-intel').classList.toggle('active', name === 'intel');
   document.getElementById('pane-cases').classList.toggle('hidden', name !== 'cases');
   document.getElementById('pane-intel').classList.toggle('hidden', name !== 'intel');
   if (name === 'intel') renderIntelTab();
