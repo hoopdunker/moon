@@ -694,26 +694,33 @@ function renderIntelDashboard(data) {
 }
 
 function populateIntelSections(sections) {
-  const map = {
-    'Executive Summary':       'id-summary',
-    'Top Nation-State Actors': 'id-actors',
-    'Top Vulnerabilities':     'id-vulns',
-    'Top Breaches':            'id-breaches',
-    'Recommended Actions':     'id-actions',
-    'Active IOCs':             'id-iocs',
-    'Top Malware Families':    'id-malware',
-    'Top Affected Packages':   'id-packages',
-    'Top MITRE ATT&CK TTPs':   'id-ttps',
-    'CVE Patching Priorities': 'id-patching',
-    'Intelligence Gaps':       'id-gaps',
-  };
+  // Each entry lists all heading variants the model might use for that section
+  const map = [
+    [['Executive Summary', 'Summary'],                                          'id-summary'],
+    [['Top Nation-State Actors', 'Threat Actors', 'Nation-State Actors', 'APT Actors'], 'id-actors'],
+    [['Top Vulnerabilities', 'Vulnerabilities'],                                'id-vulns'],
+    [['Top Breaches', 'Breaches', 'Notable Breaches'],                          'id-breaches'],
+    [['Recommended Actions', 'Recommendations', 'Actions'],                     'id-actions'],
+    [['Active IOCs', 'IOCs', 'Indicators of Compromise'],                       'id-iocs'],
+    [['Top Malware Families', 'Malware Families', 'Malware'],                   'id-malware'],
+    [['Top Affected Packages', 'Affected Packages', 'Packages'],                'id-packages'],
+    [['Top MITRE ATT&CK TTPs', 'MITRE ATT&CK TTPs', 'TTPs', 'MITRE TTPs'],    'id-ttps'],
+    [['CVE Patching Priorities', 'Patching Priorities', 'CVE Priorities'],      'id-patching'],
+    [['Intelligence Gaps', 'Gaps'],                                             'id-gaps'],
+  ];
   const none = '<span style="color:var(--muted);font-size:11px">None observed this period.</span>';
-  for (const [name, id] of Object.entries(map)) {
+  let matched = 0;
+  for (const [names, id] of map) {
     const el = document.getElementById(id);
     if (!el) continue;
-    const text = sections[name];
+    const text = names.map(n => sections[n]).find(v => v);
     el.innerHTML = text ? marked.parse(text) : none;
-    if (text) enhanceIntelTable(el);
+    if (text) { enhanceIntelTable(el); matched++; }
+  }
+  // Fallback: if no sections matched at all, show the raw output in the summary card
+  if (matched === 0 && Object.keys(sections).length === 0) {
+    const el = document.getElementById('id-summary');
+    if (el) el.innerHTML = '<span style="color:var(--muted);font-size:11px">Report generated but sections could not be parsed. Check the case on moon.groot.work for the full output.</span>';
   }
 }
 
