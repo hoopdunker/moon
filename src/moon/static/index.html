@@ -21,6 +21,11 @@
   header span { color: var(--muted); font-size: 12px; }
   header button { margin-left: auto; background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
   header button:hover { opacity: 0.85; }
+  .intel-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; }
+  .intel-status:hover { border-color: var(--accent); color: var(--text); }
+  .intel-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .intel-status .dot.ok { background: var(--green); }
+  .intel-status .dot.running { background: var(--accent); animation: pulse 1.2s infinite; }
 
   .layout { display: flex; flex: 1; overflow: hidden; }
 
@@ -190,6 +195,10 @@
 <header>
   <h1>⬡ Moon</h1>
   <span>Security Orchestration</span>
+  <a class="intel-status hidden" id="intel-status-link" href="https://intel.groot.work" target="_blank">
+    <span class="dot" id="intel-status-dot"></span>
+    <span id="intel-status-text">Intel</span>
+  </a>
   <button id="new-btn">+ New Task</button>
 </header>
 
@@ -813,7 +822,33 @@ if (isIntelDomain) {
   setInterval(loadIntelDashboard, 300000); // auto-refresh every 5 min
 } else {
   fetchCases();
+  setInterval(fetchCases, 60000);  // re-fetch to pick up new cases (e.g. scheduled intel)
   setInterval(renderList, 15000);
+  updateIntelStatus();
+  setInterval(updateIntelStatus, 120000);
+}
+
+async function updateIntelStatus() {
+  try {
+    const res = await fetch('/intel/latest');
+    const data = await res.json();
+    const link = document.getElementById('intel-status-link');
+    const dot = document.getElementById('intel-status-dot');
+    const text = document.getElementById('intel-status-text');
+    if (!data || data.status === 'none') return;
+    link.classList.remove('hidden');
+    if (data.status === 'running' || data.status === 'pending') {
+      dot.className = 'dot running';
+      text.textContent = 'Intel running…';
+    } else if (data.status === 'completed') {
+      dot.className = 'dot ok';
+      const ago = data.completed_at ? time_ago(data.completed_at) : '';
+      text.textContent = ago ? `Intel · ${ago}` : 'Intel · done';
+    } else {
+      dot.className = 'dot';
+      text.textContent = 'Intel · failed';
+    }
+  } catch (_) {}
 }
 </script>
 </body>
