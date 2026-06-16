@@ -34,70 +34,58 @@ RSS_SOURCES = {
     "microsoft_security": "https://www.microsoft.com/en-us/security/blog/feed/",
     "ncsc_uk": "https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml",
     # Crypto / blockchain breach tracking
-    "rekt_news": "https://rekt.news/rss/",
     "chainalysis": "https://www.chainalysis.com/blog/feed/",
     "cointelegraph_security": "https://cointelegraph.com/rss/category/security",
     "the_block": "https://www.theblock.co/rss.xml",
     "slowmist": "https://slowmist.medium.com/feed",
+    "coindesk": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    "immunefi": "https://medium.com/feed/immunefi",
+    "elliptic": "https://www.elliptic.co/blog/rss.xml",
+    "peckshield": "https://peckshield.medium.com/feed",
     # Security vendor research blogs
     "unit42": "https://unit42.paloaltonetworks.com/feed/",
     "talos": "https://blog.talosintelligence.com/rss/",
     "checkpoint_research": "https://research.checkpoint.com/feed/",
     "welivesecurity": "https://www.welivesecurity.com/feed/",
-    "sophos_news": "https://news.sophos.com/en-us/feed/",
     "securelist": "https://securelist.com/feed/",
     "sentinelone": "https://www.sentinelone.com/blog/feed/",
     "elastic_security": "https://www.elastic.co/security-labs/rss/feed.xml",
-    "trend_micro": "https://feeds.trendmicro.com/Anti-MalwareBlog/",
-    "rapid7": "https://www.rapid7.com/blog/feed/",
+    "rapid7": "https://www.rapid7.com/blog/rss/",
     # Vulnerability research
     "project_zero": "https://googleprojectzero.blogspot.com/feeds/posts/default",
     "zdi": "https://www.zerodayinitiative.com/rss/published/",
     "exploit_db": "https://www.exploit-db.com/rss.xml",
     "portswigger_research": "https://portswigger.net/research/rss",
-    "synacktiv": "https://www.synacktiv.com/feed",
-    "packetstorm": "https://rss.packetstormsecurity.com/",
     "vuldb": "https://vuldb.com/?rss.recent",
     # Supply chain security
-    "socket_dev": "https://socket.dev/blog/rss.xml",
     "sonatype": "https://blog.sonatype.com/rss.xml",
     "snyk": "https://snyk.io/blog/feed/",
     "checkmarx": "https://checkmarx.com/blog/feed/",
     "openssf": "https://openssf.org/feed/",
     "chainguard": "https://www.chainguard.dev/unchained/rss.xml",
+    "stepsecurity": "https://www.stepsecurity.io/blog/rss.xml",
     # Cloud provider security bulletins
     "aws_security": "https://aws.amazon.com/security/security-bulletins/rss/",
-    "gcp_security": "https://cloud.google.com/feeds/gcp-security-bulletins.xml",
+    "gcp_security": "https://cloud.google.com/security/resources/rss",
     "msrc_blog": "https://msrc.microsoft.com/blog/feed",
-    # Vendor patch advisories (Patch Tuesday, CPU cycles)
-    "adobe_psirt": "https://helpx.adobe.com/security/rss.xml",
-    "oracle_cpu": "https://www.oracle.com/technetwork/topics/security/alerts-086861.rss",
+    # Vendor patch advisories
     "sap_security": "https://support.sap.com/content/dam/support/en_us/library/ssp/my-support/trust-center/sap-security-patch-day/rss-feed.xml",
-    # Regulatory & breach disclosure
-    "ftc_press": "https://www.ftc.gov/feeds/press-releases.xml",
-    "ico_uk": "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/rss.xml",
-    "ms_isac": "https://www.cisecurity.org/ms-isac/advisories/rss",
+    "ms_isac": "https://www.cisecurity.org/feed/advisories",
+    # Breach tracking
+    "databreaches_net": "https://www.databreaches.net/feed/",
+    "securityaffairs": "https://securityaffairs.com/feed",
     "hipaa_journal": "https://www.hipaajournal.com/feed/",
-    # Geopolitical & policy
+    # Geopolitical & threat research
     "the_record": "https://therecord.media/feed/",
     "cyberscoop": "https://cyberscoop.com/feed/",
-    "lawfare": "https://www.lawfaremedia.org/feeds/rss",
-    "politico_cyber": "https://rss.politico.com/cybersecurity.xml",
+    "sekoia": "https://blog.sekoia.io/feed/",
+    "huntress": "https://www.huntress.com/blog/rss.xml",
+    "lumu": "https://lumu.io/blog/feed/",
     # AI security
-    "hiddenlayer": "https://hiddenlayer.com/research/feed/",
-    "protect_ai": "https://protectai.com/feed",
-    "lakera": "https://www.lakera.ai/blog/rss.xml",
     "trail_of_bits": "https://blog.trailofbits.com/feed",
-    "adversa_ai": "https://adversa.ai/blog/rss/",
     "wiz_research": "https://www.wiz.io/blog/rss",
     # Cloud & application security
-    "zscaler": "https://www.zscaler.com/blogs/security-research/rss",
-    "upwind": "https://www.upwind.io/feed.xml",
-    "aikido": "https://www.aikido.dev/blog/rss",
-    # Supply chain & CI/CD security
-    "stepsecurity": "https://www.stepsecurity.io/blog/rss.xml",
-    # Crypto / financial news
-    "coindesk": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    "upwind": "https://www.upwind.io/feed",
 }
 
 _HEADERS = {"User-Agent": "Moon-ThreatIntel/1.0"}
@@ -232,8 +220,10 @@ def fetch_latest_cves(
     hours_back = min(max(hours_back, 1), 720)  # cap at 30 days
     max_results = min(max(max_results, 1), 50)
 
-    start = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(hours=hours_back)
     pub_start = start.strftime("%Y-%m-%dT%H:%M:%S.000")
+    pub_end = now.strftime("%Y-%m-%dT%H:%M:%S.000")
 
     # Load CISA KEV for cross-reference
     kev_cves: set[str] = set()
@@ -252,9 +242,10 @@ def fetch_latest_cves(
     except Exception:
         pass  # KEV cross-reference is best-effort
 
+    # NVD requires both pubStartDate and pubEndDate when either is used
     url = (
         f"https://services.nvd.nist.gov/rest/json/cves/2.0"
-        f"?pubStartDate={pub_start}&resultsPerPage={max_results}&noRejected"
+        f"?pubStartDate={pub_start}&pubEndDate={pub_end}&resultsPerPage={max_results}"
     )
     if severity == "critical":
         url += "&cvssV3Severity=CRITICAL"
@@ -386,80 +377,63 @@ def _format_cve(v: dict, kev_deadlines: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def fetch_threat_feeds(feed_type: str = "all", max_items: int = 10, hours_back: int = 24) -> str:
+def fetch_threat_feeds(feed_type: str = "all", max_items: int = 10, hours_back: int = 168) -> str:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
     results = []
 
-    if feed_type in ("all", "malware"):
-        try:
-            with httpx.Client(timeout=TIMEOUT, follow_redirects=False) as client:
-                resp = client.post(
-                    "https://mb-api.abuse.ch/api/v1/",
-                    data={"query": "get_recent", "selector": "time"},
-                    headers=_HEADERS,
-                )
-                resp.raise_for_status()
-                all_samples = _safe_json(resp).get("data", [])
-                samples = [s for s in all_samples if _after_cutoff(s.get("first_seen", ""), cutoff)][:max_items]
-            section = "=== MalwareBazaar (Recent Samples) ===\n"
-            if not samples:
-                section += f"  No samples in the last {hours_back}h.\n"
-            else:
-                for s in samples:
-                    tags = ", ".join(s.get("tags") or []) or "none"
-                    section += (
-                        f"SHA256: {s.get('sha256_hash', 'N/A')[:16]}...\n"
-                        f"  Family: {s.get('signature') or 'Unknown'} | Tags: {tags}\n"
-                        f"  First seen: {s.get('first_seen', 'N/A')}\n"
-                    )
-            results.append(section)
-        except Exception as e:
-            results.append(f"=== MalwareBazaar ===\nError: {e}\n")
-
-    if feed_type in ("all", "urls"):
-        try:
-            with httpx.Client(timeout=TIMEOUT, follow_redirects=False) as client:
-                resp = client.post(
-                    "https://urlhaus-api.abuse.ch/v1/urls/recent/",
-                    data={"limit": str(max_items * 10)},
-                    headers=_HEADERS,
-                )
-                resp.raise_for_status()
-                all_urls = _safe_json(resp).get("urls", [])
-                urls = [u for u in all_urls if _after_cutoff(u.get("date_added", ""), cutoff)][:max_items]
-            section = "=== URLhaus (Malicious URLs) ===\n"
-            if not urls:
-                section += f"  No URLs in the last {hours_back}h.\n"
-            else:
-                for u in urls:
-                    defanged = u.get("url", "").replace(".", "[.]").replace("://", "[://]")
-                    tags = ", ".join(u.get("tags") or []) or "none"
-                    section += f"{defanged}\n  Status: {u.get('url_status', '?')} | Tags: {tags}\n"
-            results.append(section)
-        except Exception as e:
-            results.append(f"=== URLhaus ===\nError: {e}\n")
-
     if feed_type in ("all", "cisa_alerts"):
+        # CISA KEV (actively exploited vulnerabilities) — still works
         try:
             with httpx.Client(timeout=TIMEOUT, follow_redirects=True) as client:
                 resp = client.get(
-                    "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+                    "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
                     headers=_HEADERS,
                 )
                 resp.raise_for_status()
-                all_items = _parse_feed(_safe_text(resp), max_items * 5)
-                items = [i for i in all_items if _after_cutoff(i["pubDate"], cutoff)][:max_items]
-            section = "=== CISA Alerts & Advisories ===\n"
-            if not items:
-                section += f"  No advisories in the last {hours_back}h.\n"
+                all_vulns = _safe_json(resp).get("vulnerabilities", [])
+                recent = [
+                    v for v in all_vulns
+                    if _after_cutoff(v.get("dateAdded", ""), cutoff)
+                ][:max_items]
+            section = f"=== CISA KEV (Actively Exploited — last {hours_back}h) ===\n"
+            if not recent:
+                section += f"  No new KEV entries in the last {hours_back}h.\n"
             else:
-                for item in items:
-                    date = item["pubDate"][:16] if item["pubDate"] else "?"
-                    section += f"[{date}] {item['title']}\n"
-                    if item["description"]:
-                        section += f"  {item['description'][:200]}\n"
+                for v in recent:
+                    section += (
+                        f"{v.get('cveID', '?')} | {v.get('vendorProject', '?')} — {v.get('product', '?')}\n"
+                        f"  {v.get('shortDescription', '')[:200]}\n"
+                        f"  Added: {v.get('dateAdded', '?')} | Due: {v.get('dueDate', 'N/A')}\n"
+                    )
             results.append(section)
         except Exception as e:
-            results.append(f"=== CISA Alerts ===\nError: {e}\n")
+            results.append(f"=== CISA KEV ===\nError: {e}\n")
+
+    if feed_type in ("all", "defi_hacks"):
+        try:
+            with httpx.Client(timeout=TIMEOUT, follow_redirects=True) as client:
+                resp = client.get("https://api.llama.fi/hacks", headers=_HEADERS)
+                resp.raise_for_status()
+                all_hacks = _safe_json(resp)
+            cutoff_ts = cutoff.timestamp()
+            recent = [h for h in all_hacks if h.get("date", 0) >= cutoff_ts]
+            recent.sort(key=lambda h: h.get("amount", 0), reverse=True)
+            recent = recent[:max_items]
+            section = f"=== DeFiLlama — DeFi/Web3 Hacks (last {hours_back}h) ===\n"
+            if not recent:
+                section += f"  No hacks recorded in the last {hours_back}h.\n"
+            else:
+                for h in recent:
+                    amount = f"${h['amount']:,.0f}" if h.get("amount") else "unknown"
+                    chains = ", ".join(h.get("chain", [])) or "unknown"
+                    returned = f" (${h['returnedFunds']:,.0f} returned)" if h.get("returnedFunds") else ""
+                    section += (
+                        f"{h.get('name', '?')} | {amount}{returned}\n"
+                        f"  Chain: {chains} | Type: {h.get('targetType', '?')}\n"
+                        f"  Attack: {h.get('classification', '?')} — {h.get('technique', '?')}\n"
+                    )
+            results.append(section)
+        except Exception as e:
+            results.append(f"=== DeFiLlama Hacks ===\nError: {e}\n")
 
     return "\n".join(results) or "No threat feed data retrieved."

@@ -1,5 +1,10 @@
 # Threat Intelligence Report Format
 
+**Tone**: factual, direct, no filler. Write for a technical CISO who reads quickly.
+**Confidence levels**: High / Medium / Low on any inferred claim.
+**IOC safety**: never write a clickable URL or undefanged domain — always defang.
+**Data integrity**: only report findings that came from the tool results provided to you. Do NOT invent, infer, or extrapolate CVE IDs, package names, threat actors, breach victims, or IOCs. If a section has no data from the tools, write "None observed this period." — do not fill it with guesses.
+
 Structure every threat intelligence brief exactly as follows. Do not skip sections — if there is no data for a section, write "None observed this period."
 
 ---

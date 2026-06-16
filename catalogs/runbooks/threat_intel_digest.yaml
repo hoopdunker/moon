@@ -13,32 +13,34 @@ tags:
   - ciso
 steps:
   - text: >
-      Fetch general security news headlines from the last 48 hours using sources:
+      Fetch general security news and breach intelligence from the last 7 days using sources:
       bleepingcomputer, hackernews, krebsonsecurity, sans_isc, darkreading, securityweek,
-      the_record, cyberscoop. Set hours_back=48. Summarise the top stories.
-      FOCUS ONLY ON: attacks targeting private companies, enterprises, financial institutions,
-      critical infrastructure, government agencies, and defence organisations.
-      SKIP: schools, universities, hospitals, non-profits, and individual victims unless
-      the attack technique is novel or the threat actor is nation-state linked.
-      For each story note: victim sector, attack type, threat actor (if known), and impact.
+      the_record, cyberscoop, securityaffairs, databreaches_net. Set hours_back=168.
+      Summarise the top stories. FOCUS ONLY ON: attacks targeting private companies,
+      enterprises, financial institutions, critical infrastructure, government agencies,
+      and defence organisations. SKIP: schools, universities, hospitals, non-profits, and
+      individual victims unless the attack technique is novel or the threat actor is
+      nation-state linked. For each story note: victim sector, attack type, threat actor
+      (if known), and impact.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
   - text: >
       Fetch nation-state and APT threat intelligence from the last 7 days using sources:
       recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk, unit42, talos,
-      securelist, sentinelone. Set hours_back=168. Identify active threat actor campaigns,
-      targeted sectors, TTPs observed, and any attribution. Focus on campaigns targeting
-      technology companies, financial sector, defence, and critical infrastructure.
-      Note which groups are most active and their primary targets.
+      securelist, sentinelone, sekoia, lumu, huntress. Set hours_back=168. Identify active
+      threat actor campaigns, targeted sectors, TTPs observed, and any attribution. Focus
+      on campaigns targeting technology companies, financial sector, defence, and critical
+      infrastructure. Note which groups are most active and their primary targets.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
   - text: >
       Fetch cryptocurrency and Web3 breach intelligence from the last 7 days using sources:
-      rekt_news, chainalysis, cointelegraph_security, the_block, slowmist. Set hours_back=168.
-      Identify hacks, rug pulls, or protocol exploits — note the attack vector, amount lost,
-      affected chain, and whether funds were recovered.
+      chainalysis, cointelegraph_security, the_block, slowmist, coindesk, immunefi,
+      elliptic, peckshield. Set hours_back=168. Identify hacks, rug pulls, or protocol
+      exploits — note the attack vector, amount lost, affected chain, and whether funds
+      were recovered.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
@@ -61,10 +63,11 @@ steps:
     skills: [threat_intel_analyst]
 
   - text: >
-      Fetch all active threat feeds: recent malware samples, malicious URLs, and CISA
-      advisories. For each malware sample extract the family name, type, delivery method,
-      and any C2 infrastructure. Defang all URLs and domains. Focus on malware families
-      targeting enterprise environments (info-stealers, ransomware, RATs, loaders).
+      Fetch active threat feeds covering CISA KEV additions and DeFi/Web3 hacks from the
+      last 7 days (hours_back=168). For CISA KEV entries note the CVE, vendor, product,
+      date added, and remediation deadline. For DeFi hacks note the protocol name, amount
+      lost, chain, attack classification, technique, and whether funds were recovered.
+      Rank crypto hacks by amount lost.
     tools: [fetch_threat_feeds]
     skills: [threat_intel_analyst]
 
