@@ -26,14 +26,17 @@ _catalogs_path: Optional[Path] = None
 
 
 def _parse_intel_sections(markdown: str) -> dict[str, str]:
+    import re
     sections: dict[str, str] = {}
     current: str | None = None
     buf: list[str] = []
+    header_re = re.compile(r"^#{1,4}\s+(.+)")
     for line in markdown.splitlines():
-        if line.startswith("## "):
+        m = header_re.match(line)
+        if m:
             if current is not None:
                 sections[current] = "\n".join(buf).strip()
-            current = line[3:].strip()
+            current = m.group(1).strip()
             buf = []
         elif current is not None:
             buf.append(line)
