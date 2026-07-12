@@ -1,3 +1,4 @@
+import html
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -109,6 +110,12 @@ def _safe_json(resp: httpx.Response) -> dict | list:
     return resp.json()
 
 
+def _clean_desc(raw: str) -> str:
+    """Strip HTML tags, unescape entities, collapse whitespace, cap length."""
+    text = html.unescape(re.sub(r"<[^>]+>", "", raw))
+    return re.sub(r"\s+", " ", text).strip()[:500]
+
+
 def _parse_feed(xml_text: str, max_items: int) -> list[dict]:
     root = ET.fromstring(xml_text)
 
@@ -117,7 +124,7 @@ def _parse_feed(xml_text: str, max_items: int) -> list[dict]:
         title = item.findtext("title", "").strip()
         link = item.findtext("link", "").strip()
         pub_date = item.findtext("pubDate", "").strip()
-        desc = re.sub(r"<[^>]+>", "", item.findtext("description", "")).strip()[:300]
+        desc = _clean_desc(item.findtext("description", ""))
         items.append({"title": title, "link": link, "pubDate": pub_date, "description": desc})
 
     if not items:
@@ -128,11 +135,7 @@ def _parse_feed(xml_text: str, max_items: int) -> list[dict]:
             link_el = entry.find("a:link", ns)
             link = link_el.get("href", "") if link_el is not None else ""
             pub_date = entry.findtext("a:published", entry.findtext("a:updated", "", ns), ns).strip()
-            desc = re.sub(
-                r"<[^>]+>",
-                "",
-                entry.findtext("a:summary", entry.findtext("a:content", "", ns), ns),
-            ).strip()[:300]
+            desc = _clean_desc(entry.findtext("a:summary", entry.findtext("a:content", "", ns), ns))
             items.append({"title": title, "link": link, "pubDate": pub_date, "description": desc})
 
     return items
@@ -158,6 +161,11 @@ def _parse_pub_date(date_str: str) -> datetime | None:
         return datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
     except Exception:
         pass
+    # CISA KEV: date-only "2025-01-14"
+    try:
+        return datetime.strptime(date_str[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except Exception:
+        pass
     return None
 
 
@@ -178,6 +186,8 @@ def fetch_security_news(
 ) -> str:
     if not sources:
         sources = list(RSS_SOURCES.keys())
+    # max_items=0 → no per-feed cap; the hours_back window does the filtering.
+    max_items = None if max_items <= 0 else min(max_items, 20)
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
 
     results = []
@@ -191,7 +201,8 @@ def fetch_security_news(
                 resp = client.get(url, headers=_HEADERS)
                 resp.raise_for_status()
                 # Fetch extra candidates so filtering by date still yields max_items
-                all_items = _parse_feed(_safe_text(resp), max_items * 5)
+                parse_cap = max_items * 5 if max_items else 10_000
+                all_items = _parse_feed(_safe_text(resp), parse_cap)
                 feed_items = [i for i in all_items if _after_cutoff(i["pubDate"], cutoff)][:max_items]
                 label = source.replace("_", " ").title()
                 section = f"=== {label} ===\n"

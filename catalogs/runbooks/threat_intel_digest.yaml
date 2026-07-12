@@ -15,8 +15,12 @@ steps:
   - text: >
       Fetch general security news and breach intelligence from the last 7 days using sources:
       bleepingcomputer, hackernews, krebsonsecurity, sans_isc, darkreading, securityweek,
-      the_record, cyberscoop, securityaffairs, databreaches_net. Set hours_back=168.
-      Summarise the top stories. FOCUS ONLY ON: attacks targeting private companies,
+      the_record, cyberscoop, securityaffairs, databreaches_net. Use the lookback
+      window from the task description if it specifies one (e.g. "last 24 hours" →
+      hours_back=24), otherwise hours_back=168. For windows of 48h or less set
+      max_items=0 (no cap — return everything in the window); for longer windows
+      set max_items=15. Summarise the top stories and note which topics appear
+      across multiple sources — cross-source repetition signals prevalence. FOCUS ONLY ON: attacks targeting private companies,
       enterprises, financial institutions, critical infrastructure, government agencies,
       and defence organisations. SKIP: schools, universities, hospitals, non-profits, and
       individual victims unless the attack technique is novel or the threat actor is
@@ -28,7 +32,9 @@ steps:
   - text: >
       Fetch nation-state and APT threat intelligence from the last 7 days using sources:
       recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk, unit42, talos,
-      securelist, sentinelone, sekoia, lumu, huntress. Set hours_back=168. Identify active
+      securelist, sentinelone, sekoia, lumu, huntress. Use the task's lookback
+      window if given, else hours_back=168; max_items=0 for windows of 48h or
+      less, else 10. Identify active
       threat actor campaigns, targeted sectors, TTPs observed, and any attribution. Focus
       on campaigns targeting technology companies, financial sector, defence, and critical
       infrastructure. Note which groups are most active and their primary targets.
@@ -38,7 +44,9 @@ steps:
   - text: >
       Fetch cryptocurrency and Web3 breach intelligence from the last 7 days using sources:
       chainalysis, cointelegraph_security, the_block, slowmist, coindesk, immunefi,
-      elliptic, peckshield. Set hours_back=168. Identify hacks, rug pulls, or protocol
+      elliptic, peckshield. Use the task's lookback window if given, else
+      hours_back=168; max_items=0 for windows of 48h or less, else 10. Identify
+      hacks, rug pulls, or protocol
       exploits — note the attack vector, amount lost, affected chain, and whether funds
       were recovered.
     tools: [fetch_security_news]
@@ -46,15 +54,18 @@ steps:
 
   - text: >
       Fetch supply chain and open-source package security intelligence from the last 7 days
-      using sources: socket_dev, sonatype, snyk, checkmarx, openssf, chainguard.
-      Set hours_back=168. Identify malicious package publishes, dependency confusion attacks,
+      using sources: stepsecurity, sonatype, snyk, checkmarx, openssf, chainguard.
+      Use the task's lookback window if given, else hours_back=168; max_items=0
+      for windows of 48h or less, else 10. Identify malicious package publishes,
+      dependency confusion attacks,
       typosquats, and critical CVEs in widely-used open-source libraries. Note the package
       name, registry (npm/PyPI/Maven/etc.), versions affected, and recommended action.
     tools: [fetch_security_news]
     skills: [threat_intel_analyst]
 
   - text: >
-      Fetch recent critical and high-severity CVEs from the last 7 days (hours_back=168).
+      Fetch recent critical and high-severity CVEs. Use the task's lookback window
+      if given (e.g. "last 24 hours" → hours_back=24), else hours_back=168.
       Identify which are in the CISA KEV catalog (actively exploited), note their deadlines,
       and rank the top patching priorities with affected products, version ranges, and fix versions.
       Focus on CVEs affecting enterprise software, cloud infrastructure, network devices,
@@ -63,8 +74,9 @@ steps:
     skills: [threat_intel_analyst]
 
   - text: >
-      Fetch active threat feeds covering CISA KEV additions and DeFi/Web3 hacks from the
-      last 7 days (hours_back=168). For CISA KEV entries note the CVE, vendor, product,
+      Fetch active threat feeds covering CISA KEV additions and DeFi/Web3 hacks.
+      Use the task's lookback window if given, else hours_back=168.
+      For CISA KEV entries note the CVE, vendor, product,
       date added, and remediation deadline. For DeFi hacks note the protocol name, amount
       lost, chain, attack classification, technique, and whether funds were recovered.
       Rank crypto hacks by amount lost.
@@ -86,4 +98,4 @@ steps:
       against patch SLAs. Connect the dots where a single campaign spans multiple categories.
     tools: [get_environment_profile]
     skills: [threat_intel_analyst, intel_editor]
-    guidelines: [intel_report, output_format]
+    guidelines: [intel_report]

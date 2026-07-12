@@ -5,6 +5,8 @@
 **IOC safety**: never write a clickable URL or undefanged domain — always defang.
 **Data integrity**: only report findings that came from the tool results provided to you. Do NOT invent, infer, or extrapolate CVE IDs, package names, threat actors, breach victims, or IOCs. If a section has no data from the tools, write "None observed this period." — do not fill it with guesses.
 
+**CRITICAL — section headers**: Every section MUST begin with a `## ` header (two hashes + space + title), exactly as shown below. The dashboard that displays this report parses `## ` headers to split sections. If you use any other format (bold text, plain text, single `#`, triple `###`) the report will not display and your output will be wasted. Example: `## Executive Summary`
+
 Structure every threat intelligence brief exactly as follows. Do not skip sections — if there is no data for a section, write "None observed this period."
 
 ---

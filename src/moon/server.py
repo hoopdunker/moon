@@ -85,7 +85,7 @@ def _check_models() -> bool:
         llm.init_models()
         return True
     except Exception as e:
-        log.error("model init failed: %s", e)
+        logger.error("model init failed: %s", e)
         return False
 
 

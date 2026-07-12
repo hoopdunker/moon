@@ -1,9 +1,9 @@
 name: fetch_security_news
 description: >
-  Fetches the latest headlines from security news RSS/Atom feeds across 9 categories:
-  general news, nation-state/APT intel, crypto breaches, vendor research blogs,
-  vulnerability research, supply chain, cloud bulletins, regulatory/breach disclosure,
-  geopolitical/policy, and AI security. Returns formatted text per source.
+  Fetches the latest headlines from security news RSS/Atom feeds: general news,
+  nation-state/APT intel, crypto breaches, vendor research blogs, vulnerability
+  research, supply chain, cloud bulletins, patch advisories, breach tracking,
+  geopolitical/threat research, and AI security. Returns formatted text per source.
 parameters:
   type: object
   properties:
@@ -13,22 +13,25 @@ parameters:
         type: string
       description: >
         List of source keys to fetch. Defaults to all sources if omitted.
-        Categories — general: bleepingcomputer, hackernews, krebsonsecurity, sans_isc,
-        darkreading, securityweek. Nation-state/APT: recorded_future, mandiant,
-        crowdstrike, microsoft_security, ncsc_uk. Crypto: rekt_news, chainalysis,
-        cointelegraph_security, the_block, slowmist. Vendor research: unit42, talos,
-        checkpoint_research, welivesecurity, sophos_news, securelist, sentinelone,
-        elastic_security, trend_micro, rapid7. Vuln research: project_zero, zdi,
-        exploit_db, portswigger_research, synacktiv, packetstorm, vuldb. Supply chain:
-        socket_dev, sonatype, snyk, checkmarx, openssf, chainguard. Cloud bulletins:
-        aws_security, gcp_security, msrc_blog. Patch advisories: adobe_psirt,
-        oracle_cpu, sap_security. Regulatory: ftc_press, ico_uk, ms_isac,
-        hipaa_journal. Geopolitical: the_record, cyberscoop, lawfare, politico_cyber.
-        AI security: hiddenlayer, protect_ai, lakera, trail_of_bits, adversa_ai,
-        wiz_research.
+        Categories — general: bleepingcomputer, hackernews (The Hacker News),
+        krebsonsecurity, sans_isc, darkreading, securityweek. Nation-state/APT:
+        recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk.
+        Crypto: chainalysis, cointelegraph_security, the_block, slowmist, coindesk,
+        immunefi, elliptic, peckshield. Vendor research: unit42, talos,
+        checkpoint_research, welivesecurity, securelist, sentinelone,
+        elastic_security, rapid7. Vuln research: project_zero, zdi, exploit_db,
+        portswigger_research, vuldb. Supply chain: sonatype, snyk, checkmarx,
+        openssf, chainguard, stepsecurity. Cloud bulletins: aws_security,
+        gcp_security, msrc_blog. Patch advisories: sap_security, ms_isac.
+        Breach tracking: databreaches_net, securityaffairs, hipaa_journal.
+        Geopolitical/threat research: the_record, cyberscoop, sekoia, huntress,
+        lumu. AI security: trail_of_bits, wiz_research. Cloud/app security: upwind.
     max_items:
       type: integer
-      description: Maximum headlines to return per feed (default 5, max 20).
+      description: >
+        Maximum headlines to return per feed (default 5, max 20). Pass 0 for no
+        cap — returns every item within the hours_back window (feeds carry ~20-50
+        items, so use 0 with short windows like 24h).
   required: []
 mock_response: |
   === Bleeping Computer ===

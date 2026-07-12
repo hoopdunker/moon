@@ -1,40 +1,34 @@
 name: fetch_threat_feeds
 description: >
-  Fetches live threat intelligence from abuse.ch APIs and CISA advisories.
-  MalwareBazaar returns sample metadata only (hashes, family, tags) — no binaries
-  are downloaded. URLhaus returns malicious URL metadata defanged for safe display.
-  CISA returns the latest cybersecurity advisories as parsed text.
+  Fetches live threat feeds: CISA KEV (Known Exploited Vulnerabilities — CVEs
+  confirmed exploited in the wild, with vendor, product, and remediation deadline)
+  and DeFiLlama hacks (DeFi/Web3 protocol exploits with amount lost, chain, and
+  attack technique, ranked by amount).
 parameters:
   type: object
   properties:
     feed_type:
       type: string
-      enum: [all, malware, urls, cisa_alerts]
+      enum: [all, cisa_alerts, defi_hacks]
       description: Which feeds to pull. Defaults to all.
     max_items:
       type: integer
       description: Maximum items to return per feed (default 10).
+    hours_back:
+      type: integer
+      description: Lookback window in hours (default 168 = 7 days).
   required: []
 mock_response: |
-  === MalwareBazaar (Recent Samples) ===
-  SHA256: 3a4b5c6d7e8f9a0b...
-    Family: AgentTesla | Tags: stealer, credential-theft, keylogger
-    First seen: 2025-01-14 08:22:01
+  === CISA KEV (Actively Exploited — last 168h) ===
+  CVE-2025-0282 | Ivanti — Connect Secure
+    A stack-based buffer overflow in Ivanti Connect Secure allows a remote unauthenticated attacker to achieve remote code execution.
+    Added: 2025-01-14 | Due: 2025-01-21
 
-  SHA256: 1f2e3d4c5b6a7980...
-    Family: CobaltStrike | Tags: loader, c2, beacon
-    First seen: 2025-01-14 06:11:44
+  CVE-2025-21333 | Microsoft — Windows Hyper-V
+    Windows Hyper-V NT Kernel Integration VSP contains a heap-based buffer overflow allowing local privilege escalation to SYSTEM.
+    Added: 2025-01-14 | Due: 2025-02-04
 
-  === URLhaus (Malicious URLs) ===
-  hxxps[://]malicious-cdn[.]ru/stage2/payload[.]exe
-    Status: online | Tags: emotet, malware-delivery
-
-  hxxp[://]203[.]0[.]113[.]45/bot[.]sh
-    Status: online | Tags: botnet, linux-dropper
-
-  === CISA Alerts & Advisories ===
-  [Tue, 14 Jan 2025] CISA Adds Two Known Exploited Vulnerabilities to Catalog
-    CISA has added CVE-2025-0282 and CVE-2025-0283 (Ivanti Connect Secure) to its KEV catalog.
-
-  [Mon, 13 Jan 2025] CISA and FBI Release Advisory on Ghost Ransomware
-    Ghost ransomware actors have compromised organizations in 70+ countries targeting unpatched Fortinet, Adobe, and Microsoft vulnerabilities.
+  === DeFiLlama — DeFi/Web3 Hacks (last 168h) ===
+  Example Protocol | $12,400,000
+    Chain: Ethereum | Type: Lending Protocol
+    Attack: Smart Contract Exploit — Price oracle manipulation via flash loan

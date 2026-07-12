@@ -18,15 +18,15 @@ def test_resolve_model_claude_opus():
 
 
 def test_resolve_model_nova_micro():
-    assert config.resolve_model("nova-micro") == "amazon.nova-micro-v1:0"
+    assert config.resolve_model("nova-micro") == "us.amazon.nova-micro-v1:0"
 
 
 def test_resolve_model_nova_lite():
-    assert config.resolve_model("nova-lite") == "amazon.nova-lite-v1:0"
+    assert config.resolve_model("nova-lite") == "us.amazon.nova-lite-v1:0"
 
 
 def test_resolve_model_nova_pro():
-    assert config.resolve_model("nova-pro") == "amazon.nova-pro-v1:0"
+    assert config.resolve_model("nova-pro") == "us.amazon.nova-pro-v1:0"
 
 
 def test_resolve_model_unknown_falls_back_to_agent_model():
@@ -48,7 +48,7 @@ def test_model_registry_claude_models_have_anthropic_prefix():
 def test_model_registry_nova_models_have_amazon_prefix():
     for name, info in config.MODEL_REGISTRY.items():
         if name.startswith("nova"):
-            assert info["bedrock_id"].startswith("amazon."), f"{name} should have amazon. prefix"
+            assert "amazon." in info["bedrock_id"], f"{name} should contain amazon. in bedrock_id"
 
 
 # ── ResourceSelection.agent_model ────────────────────────────────────────────

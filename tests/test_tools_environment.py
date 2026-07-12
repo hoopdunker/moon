@@ -26,7 +26,7 @@ def test_missing_file_returns_helpful_message(tmp_path):
 def test_empty_file_returns_message(tmp_path):
     (tmp_path / "environment.yaml").write_text("")
     result = get_environment_profile(catalogs_path=tmp_path)
-    assert "empty" in result
+    assert "No environment profile configured" in result
 
 
 # ---------------------------------------------------------------------------

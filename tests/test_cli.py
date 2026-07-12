@@ -9,6 +9,13 @@ from moon.models import ResourceSelection, RunResult, Skill, StepResult, Task
 runner = CliRunner()
 
 
+@pytest.fixture(autouse=True)
+def _no_model_probe():
+    """run() probes live Bedrock models before executing — stub it out."""
+    with patch("moon.llm.init_models"):
+        yield
+
+
 def _make_run_result(final_output="final output"):
     task = Task(description="test task")
     rs = ResourceSelection(tool_names=[], skill_names=[], guideline_names=[], reasoning="")

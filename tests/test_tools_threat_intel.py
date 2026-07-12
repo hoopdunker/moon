@@ -336,6 +336,42 @@ def test_fetch_security_news_http_error_continues():
     assert "Critical RCE in Apache" in result
 
 
+def _multi_item_rss(count: int) -> str:
+    now_str = _rfc2822(datetime.now(timezone.utc))
+    items = "".join(
+        f"<item><title>Story {i}</title><link>https://example.com/{i}</link>"
+        f"<pubDate>{now_str}</pubDate><description>Item {i} &amp;nbsp;desc.</description></item>"
+        for i in range(count)
+    )
+    return f'<?xml version="1.0"?><rss version="2.0"><channel>{items}</channel></rss>'
+
+
+def test_fetch_security_news_zero_max_items_returns_all_in_window():
+    resp = _mock_resp(content_type="text/xml", text=_multi_item_rss(8))
+    client = _make_client(resp)
+    with patch("moon.tools.threat_intel.httpx.Client", return_value=client):
+        result = fetch_security_news(sources=["bleepingcomputer"], max_items=0, hours_back=24)
+    for i in range(8):
+        assert f"Story {i}" in result
+
+
+def test_fetch_security_news_default_still_caps_at_five():
+    resp = _mock_resp(content_type="text/xml", text=_multi_item_rss(8))
+    client = _make_client(resp)
+    with patch("moon.tools.threat_intel.httpx.Client", return_value=client):
+        result = fetch_security_news(sources=["bleepingcomputer"], hours_back=24)
+    assert "Story 4" in result
+    assert "Story 5" not in result
+
+
+def test_fetch_security_news_unescapes_html_entities():
+    resp = _mock_resp(content_type="text/xml", text=_multi_item_rss(1))
+    client = _make_client(resp)
+    with patch("moon.tools.threat_intel.httpx.Client", return_value=client):
+        result = fetch_security_news(sources=["bleepingcomputer"], hours_back=24)
+    assert "&nbsp;" not in result
+
+
 def test_fetch_security_news_bad_content_type_shows_error():
     resp = _mock_resp(content_type="application/octet-stream", text="binary garbage")
     client = _make_client(resp)
@@ -553,49 +589,21 @@ def test_format_cve_no_configurations_falls_back_gracefully():
 # fetch_threat_feeds
 # ---------------------------------------------------------------------------
 
-def _mb_client(data=None, hours_ago=1):
-    sample_time = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime("%Y-%m-%d %H:%M:%S")
-    payload = data or {
-        "data": [
-            {
-                "sha256_hash": "abc123def456789012345678901234567890abcd",
-                "signature": "AgentTesla",
-                "tags": ["stealer"],
-                "first_seen": sample_time,
-            }
-        ]
-    }
-    resp = _mock_resp(content_type="application/json", json_data=payload)
-    client = MagicMock()
-    client.__enter__ = lambda s: s
-    client.__exit__ = MagicMock(return_value=False)
-    client.post.return_value = resp
-    return client
-
-
-def _uh_client(hours_ago=1):
-    url_time = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime("%Y-%m-%d %H:%M:%S")
+def _kev_client(hours_ago=1):
+    date_added = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime("%Y-%m-%d")
     payload = {
-        "urls": [
+        "vulnerabilities": [
             {
-                "url": "http://malicious.example.com/payload.exe",
-                "url_status": "online",
-                "tags": ["emotet"],
-                "date_added": url_time,
+                "cveID": "CVE-2026-0001",
+                "vendorProject": "ExampleVendor",
+                "product": "ExampleProduct",
+                "shortDescription": "Remote code execution in ExampleProduct.",
+                "dateAdded": date_added,
+                "dueDate": "2026-08-01",
             }
         ]
     }
     resp = _mock_resp(content_type="application/json", json_data=payload)
-    client = MagicMock()
-    client.__enter__ = lambda s: s
-    client.__exit__ = MagicMock(return_value=False)
-    client.post.return_value = resp
-    return client
-
-
-def _cisa_client():
-    xml = RSS_XML.format(date=_rfc2822(datetime.now(timezone.utc)))
-    resp = _mock_resp(content_type="text/xml", text=xml)
     client = MagicMock()
     client.__enter__ = lambda s: s
     client.__exit__ = MagicMock(return_value=False)
@@ -603,56 +611,85 @@ def _cisa_client():
     return client
 
 
-def test_fetch_threat_feeds_malware_shows_family():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_mb_client(), _uh_client(), _cisa_client()]):
-        result = fetch_threat_feeds(feed_type="malware")
-    assert "AgentTesla" in result
+def _defi_client(hours_ago=1, hacks=None):
+    ts = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).timestamp()
+    payload = hacks if hacks is not None else [
+        {
+            "name": "ExampleFi",
+            "date": ts,
+            "amount": 12000000,
+            "chain": ["Ethereum"],
+            "targetType": "Lending Protocol",
+            "classification": "Smart Contract Exploit",
+            "technique": "Oracle manipulation via flash loan",
+        }
+    ]
+    resp = _mock_resp(content_type="application/json", json_data=payload)
+    client = MagicMock()
+    client.__enter__ = lambda s: s
+    client.__exit__ = MagicMock(return_value=False)
+    client.get.return_value = resp
+    return client
 
 
-def test_fetch_threat_feeds_malware_shows_sha256():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_mb_client()]):
-        result = fetch_threat_feeds(feed_type="malware")
-    assert "SHA256" in result
-
-
-def test_fetch_threat_feeds_urls_defanged():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_uh_client()]):
-        result = fetch_threat_feeds(feed_type="urls")
-    assert "malicious[.]example[.]com" in result
-    assert "http://malicious.example.com" not in result
-
-
-def test_fetch_threat_feeds_urls_not_clickable():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_uh_client()]):
-        result = fetch_threat_feeds(feed_type="urls")
-    assert "hxxp[://]" in result or "[://]" in result
-
-
-def test_fetch_threat_feeds_cisa_shows_title():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_cisa_client()]):
+def test_fetch_threat_feeds_kev_shows_cve():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client()]):
         result = fetch_threat_feeds(feed_type="cisa_alerts")
-    assert "Critical RCE in Apache" in result
+    assert "CVE-2026-0001" in result
+    assert "ExampleVendor" in result
 
 
-def test_fetch_threat_feeds_filters_old_malware():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_mb_client(hours_ago=48)]):
-        result = fetch_threat_feeds(feed_type="malware", hours_back=24)
-    assert "AgentTesla" not in result
-    assert "No samples in the last" in result
+def test_fetch_threat_feeds_kev_shows_deadline():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client()]):
+        result = fetch_threat_feeds(feed_type="cisa_alerts")
+    assert "Due: 2026-08-01" in result
 
 
-def test_fetch_threat_feeds_filters_old_urls():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_uh_client(hours_ago=48)]):
-        result = fetch_threat_feeds(feed_type="urls", hours_back=24)
-    assert "malicious" not in result
-    assert "No URLs in the last" in result
+def test_fetch_threat_feeds_filters_old_kev():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client(hours_ago=48)]):
+        result = fetch_threat_feeds(feed_type="cisa_alerts", hours_back=24)
+    assert "CVE-2026-0001" not in result
+    assert "No new KEV entries in the last" in result
 
 
-def test_fetch_threat_feeds_malware_only_skips_urlhaus():
-    mb = _mb_client()
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[mb]) as mock_cls:
-        fetch_threat_feeds(feed_type="malware")
+def test_fetch_threat_feeds_defi_shows_name_and_amount():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_defi_client()]):
+        result = fetch_threat_feeds(feed_type="defi_hacks")
+    assert "ExampleFi" in result
+    assert "$12,000,000" in result
+
+
+def test_fetch_threat_feeds_defi_sorts_by_amount():
+    now_ts = datetime.now(timezone.utc).timestamp() - 3600
+    hacks = [
+        {"name": "SmallHack", "date": now_ts, "amount": 1000000, "chain": ["BSC"],
+         "targetType": "DEX", "classification": "Exploit", "technique": "Reentrancy"},
+        {"name": "BigHack", "date": now_ts, "amount": 50000000, "chain": ["Ethereum"],
+         "targetType": "Bridge", "classification": "Exploit", "technique": "Key compromise"},
+    ]
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_defi_client(hacks=hacks)]):
+        result = fetch_threat_feeds(feed_type="defi_hacks")
+    assert result.index("BigHack") < result.index("SmallHack")
+
+
+def test_fetch_threat_feeds_filters_old_defi():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_defi_client(hours_ago=400)]):
+        result = fetch_threat_feeds(feed_type="defi_hacks", hours_back=168)
+    assert "ExampleFi" not in result
+    assert "No hacks recorded in the last" in result
+
+
+def test_fetch_threat_feeds_cisa_only_skips_defi():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client()]) as mock_cls:
+        fetch_threat_feeds(feed_type="cisa_alerts")
     assert mock_cls.call_count == 1
+
+
+def test_fetch_threat_feeds_all_includes_both():
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client(), _defi_client()]):
+        result = fetch_threat_feeds(feed_type="all")
+    assert "CISA KEV" in result
+    assert "DeFiLlama" in result
 
 
 def test_fetch_threat_feeds_error_returns_message():
@@ -660,9 +697,9 @@ def test_fetch_threat_feeds_error_returns_message():
     client = MagicMock()
     client.__enter__ = lambda s: s
     client.__exit__ = MagicMock(return_value=False)
-    client.post.side_effect = real_httpx.RequestError("timeout", request=MagicMock())
+    client.get.side_effect = real_httpx.RequestError("timeout", request=MagicMock())
     with patch("moon.tools.threat_intel.httpx.Client", return_value=client):
-        result = fetch_threat_feeds(feed_type="malware")
+        result = fetch_threat_feeds(feed_type="cisa_alerts")
     assert "Error" in result
 
 
