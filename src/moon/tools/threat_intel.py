@@ -1,4 +1,5 @@
 import html
+import os
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -8,6 +9,9 @@ import httpx
 
 TIMEOUT = 20
 MAX_RESPONSE_BYTES = 5 * 1024 * 1024  # 5 MB hard cap — never buffer a binary
+# abuse.ch bulk downloads (URLhaus json_recent) run ~11 MB of pure JSON from a
+# pinned URL — allow more for those specific fetches only.
+BULK_FEED_MAX_BYTES = 20 * 1024 * 1024
 
 # Only these content-type prefixes are accepted. Anything else (octet-stream,
 # application/zip, etc.) is rejected before the body is used.
@@ -34,6 +38,7 @@ RSS_SOURCES = {
     "crowdstrike": "https://www.crowdstrike.com/blog/feed/",
     "microsoft_security": "https://www.microsoft.com/en-us/security/blog/feed/",
     "ncsc_uk": "https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml",
+    "cisa_advisories": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
     # Crypto / blockchain breach tracking
     "chainalysis": "https://www.chainalysis.com/blog/feed/",
     "cointelegraph_security": "https://cointelegraph.com/rss/category/security",
@@ -91,6 +96,12 @@ RSS_SOURCES = {
 
 _HEADERS = {"User-Agent": "Moon-ThreatIntel/1.0"}
 
+# Per-source header overrides. CISA's CDN rejects unknown agents (403) but
+# accepts curl's, which is the documented way to pull their public feed.
+_SOURCE_HEADERS: dict[str, dict] = {
+    "cisa_advisories": {"User-Agent": "curl/8.7.1"},
+}
+
 
 def _safe_text(resp: httpx.Response) -> str:
     ct = resp.headers.get("content-type", "")
@@ -101,13 +112,26 @@ def _safe_text(resp: httpx.Response) -> str:
     return resp.text
 
 
-def _safe_json(resp: httpx.Response) -> dict | list:
+def _safe_json(resp: httpx.Response, max_bytes: int = MAX_RESPONSE_BYTES) -> dict | list:
     ct = resp.headers.get("content-type", "")
     if not any(ct.startswith(p) for p in _SAFE_CONTENT_PREFIXES):
         raise ValueError(f"Blocked response: unexpected content-type '{ct}'")
-    if len(resp.content) > MAX_RESPONSE_BYTES:
-        raise ValueError(f"Blocked response: {len(resp.content)} bytes exceeds {MAX_RESPONSE_BYTES} limit")
+    if len(resp.content) > max_bytes:
+        raise ValueError(f"Blocked response: {len(resp.content)} bytes exceeds {max_bytes} limit")
     return resp.json()
+
+
+def _abusech_key() -> str:
+    """abuse.ch Auth-Key (free — register at auth.abuse.ch). Enables ThreatFox."""
+    return os.environ.get("MOON_ABUSECH_API_KEY", "")
+
+
+def _defang(indicator: str) -> str:
+    return (
+        indicator.replace("https://", "hxxps[://]")
+        .replace("http://", "hxxp[://]")
+        .replace(".", "[.]")
+    )
 
 
 def _clean_desc(raw: str) -> str:
@@ -198,7 +222,7 @@ def fetch_security_news(
                 results.append(f"=== {source} ===\nUnknown source.\n")
                 continue
             try:
-                resp = client.get(url, headers=_HEADERS)
+                resp = client.get(url, headers={**_HEADERS, **_SOURCE_HEADERS.get(source, {})})
                 resp.raise_for_status()
                 # Fetch extra candidates so filtering by date still yields max_items
                 parse_cap = max_items * 5 if max_items else 10_000
@@ -446,5 +470,87 @@ def fetch_threat_feeds(feed_type: str = "all", max_items: int = 10, hours_back: 
             results.append(section)
         except Exception as e:
             results.append(f"=== DeFiLlama Hacks ===\nError: {e}\n")
+
+    if feed_type in ("all", "iocs"):
+        # URLhaus — recent malicious URLs (no auth; ~11 MB bulk JSON, 30-day window)
+        try:
+            with httpx.Client(timeout=TIMEOUT, follow_redirects=True) as client:
+                resp = client.get("https://urlhaus.abuse.ch/downloads/json_recent/", headers=_HEADERS)
+                resp.raise_for_status()
+                data = _safe_json(resp, max_bytes=BULK_FEED_MAX_BYTES)
+            entries = [e for v in data.values() for e in (v if isinstance(v, list) else [v])]
+            recent = [e for e in entries if _after_cutoff(e.get("dateadded", ""), cutoff)]
+            recent.sort(key=lambda e: e.get("dateadded", ""), reverse=True)
+            recent = recent[:max_items]
+            section = f"=== URLhaus — Malicious URLs (last {hours_back}h) ===\n"
+            if not recent:
+                section += f"  No URLs in the last {hours_back}h.\n"
+            else:
+                for e in recent:
+                    tags = ", ".join(e.get("tags") or []) or "untagged"
+                    section += (
+                        f"{_defang(e.get('url', '?'))}\n"
+                        f"  Status: {e.get('url_status', '?')} | Threat: {e.get('threat', '?')} | Tags: {tags}\n"
+                    )
+            results.append(section)
+        except Exception as e:
+            results.append(f"=== URLhaus ===\nError: {e}\n")
+
+        # Feodo Tracker — active botnet C2 servers (no auth; small snapshot)
+        try:
+            with httpx.Client(timeout=TIMEOUT, follow_redirects=True) as client:
+                resp = client.get("https://feodotracker.abuse.ch/downloads/ipblocklist.json", headers=_HEADERS)
+                resp.raise_for_status()
+                c2s = _safe_json(resp)
+            section = "=== Feodo Tracker — Botnet C2 Blocklist ===\n"
+            if not c2s:
+                section += "  No active C2s listed.\n"
+            else:
+                for c2 in c2s[:max_items]:
+                    ip = _defang(str(c2.get("ip_address", "?")))
+                    section += (
+                        f"{ip}:{c2.get('port', '?')} | {c2.get('malware', '?')}\n"
+                        f"  Status: {c2.get('status', '?')} | Country: {c2.get('country', '?')}"
+                        f" | AS: {c2.get('as_name', '?')} | Last online: {c2.get('last_online', '?')}\n"
+                    )
+            results.append(section)
+        except Exception as e:
+            results.append(f"=== Feodo Tracker ===\nError: {e}\n")
+
+        # ThreatFox — IOCs tagged with malware family + confidence (requires free Auth-Key)
+        key = _abusech_key()
+        if not key:
+            results.append(
+                "=== ThreatFox ===\nSkipped: set MOON_ABUSECH_API_KEY (free key from auth.abuse.ch)"
+                " to enable IOCs with malware family and confidence.\n"
+            )
+        else:
+            try:
+                days = max(1, min(7, round(hours_back / 24)))
+                with httpx.Client(timeout=TIMEOUT, follow_redirects=True) as client:
+                    resp = client.post(
+                        "https://threatfox-api.abuse.ch/api/v1/",
+                        json={"query": "get_iocs", "days": days},
+                        headers={**_HEADERS, "Auth-Key": key},
+                    )
+                    resp.raise_for_status()
+                    iocs = _safe_json(resp, max_bytes=BULK_FEED_MAX_BYTES).get("data", [])
+                if not isinstance(iocs, list):
+                    iocs = []
+                iocs.sort(key=lambda i: i.get("confidence_level") or 0, reverse=True)
+                iocs = iocs[:max_items]
+                section = f"=== ThreatFox — IOCs (last {days}d) ===\n"
+                if not iocs:
+                    section += "  No IOCs returned.\n"
+                else:
+                    for i in iocs:
+                        section += (
+                            f"{_defang(str(i.get('ioc', '?')))} ({i.get('ioc_type', '?')})\n"
+                            f"  Malware: {i.get('malware_printable', '?')} | Threat: {i.get('threat_type', '?')}"
+                            f" | Confidence: {i.get('confidence_level', '?')} | First seen: {i.get('first_seen', '?')}\n"
+                        )
+                results.append(section)
+            except Exception as e:
+                results.append(f"=== ThreatFox ===\nError: {e}\n")
 
     return "\n".join(results) or "No threat feed data retrieved."

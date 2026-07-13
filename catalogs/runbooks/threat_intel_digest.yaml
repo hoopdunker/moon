@@ -31,7 +31,8 @@ steps:
 
   - text: >
       Fetch nation-state and APT threat intelligence from the last 7 days using sources:
-      recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk, unit42, talos,
+      recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk,
+      cisa_advisories, unit42, talos,
       securelist, sentinelone, sekoia, lumu, huntress. Use the task's lookback
       window if given, else hours_back=168; max_items=0 for windows of 48h or
       less, else 10. Identify active
@@ -74,8 +75,11 @@ steps:
     skills: [threat_intel_analyst]
 
   - text: >
-      Fetch active threat feeds covering CISA KEV additions and DeFi/Web3 hacks.
-      Use the task's lookback window if given, else hours_back=168.
+      Fetch active threat feeds covering CISA KEV additions, DeFi/Web3 hacks, and
+      active IOCs (URLhaus malicious URLs, Feodo Tracker botnet C2s, ThreatFox
+      IOCs). Use the task's lookback window if given, else hours_back=168.
+      For IOCs note the indicator (keep defanged), type, malware family, and
+      confidence — these populate the Active IOCs section of the report.
       For CISA KEV entries note the CVE, vendor, product,
       date added, and remediation deadline. For DeFi hacks note the protocol name, amount
       lost, chain, attack classification, technique, and whether funds were recovered.

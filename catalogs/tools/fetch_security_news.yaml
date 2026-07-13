@@ -15,7 +15,8 @@ parameters:
         List of source keys to fetch. Defaults to all sources if omitted.
         Categories — general: bleepingcomputer, hackernews (The Hacker News),
         krebsonsecurity, sans_isc, darkreading, securityweek. Nation-state/APT:
-        recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk.
+        recorded_future, mandiant, crowdstrike, microsoft_security, ncsc_uk,
+        cisa_advisories (official advisories with ATT&CK TTPs and IOCs).
         Crypto: chainalysis, cointelegraph_security, the_block, slowmist, coindesk,
         immunefi, elliptic, peckshield. Vendor research: unit42, talos,
         checkpoint_research, welivesecurity, securelist, sentinelone,

@@ -1,57 +1,65 @@
 # Moon Environment Profile
 # ─────────────────────────────────────────────────────────────────────────────
-# Optional. Fill in to get targeted intel recommendations mapped to your actual
-# controls, log sources, and asset inventory. Leave empty for generic output.
+# Drafted from observable infrastructure (AWS account 489922706493, infra repo,
+# GitHub). Items marked TODO are guesses — correct them to your reality.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# org: Acme Corp
-# industry: technology          # e.g. finance, healthcare, technology, retail
-# employee_count: ~500
+org: Moon  # TODO: your org/operating name
+industry: technology
+employee_count: 1  # TODO: adjust if a team uses this
 
 # ── Security Controls ────────────────────────────────────────────────────────
-# controls:
-#   endpoint:
-#     - name: CrowdStrike Falcon
-#       coverage: all workstations and servers
-#   network:
-#     - name: Cloudflare WAF
-#       coverage: all public-facing endpoints
-#   identity:
-#     - name: Okta
-#       coverage: all employees (MFA enforced)
-#   cloud:
-#     - name: AWS GuardDuty
-#       coverage: all accounts
-#   siem:
-#     - name: Splunk
-#       coverage: 90-day retention
-#   gaps:
-#     - No dark web monitoring
+controls:
+  network:
+    - name: Cloudflare Access (Zero Trust)
+      coverage: all public endpoints (moon.groot.work, intel.groot.work) — no direct ingress, cloudflared tunnel only
+  identity:
+    - name: AWS IAM
+      coverage: scoped task roles for ECS; separate CI role via GitHub OIDC
+  cloud:
+    - name: AWS default account controls
+      coverage: single account (489922706493), us-west-2 primary
+  gaps:
+    - No EDR/endpoint protection on developer machine  # TODO: confirm
+    - No GuardDuty or CloudTrail alerting configured  # TODO: confirm
+    - No SIEM — logs live in CloudWatch only
+    - No dark web / credential-leak monitoring
 
 # ── Log Sources ───────────────────────────────────────────────────────────────
-# log_sources:
-#   - AWS CloudTrail (all regions)
-#   - AWS VPC Flow Logs
-#   - GitHub audit logs
+log_sources:
+  - AWS CloudWatch Logs (ECS container logs, us-west-2)
+  - Cloudflare Access / tunnel logs
+  - GitHub audit log (hoopdunker org)
+  # TODO: enable + add CloudTrail and VPC Flow Logs if not already on
 
 # ── Asset Inventory ───────────────────────────────────────────────────────────
-# assets:
-#   cloud:
-#     provider: AWS
-#     regions: [us-east-1, us-west-2]
-#     primary_services: [EC2, EKS, RDS, S3, Lambda]
-#   critical_systems:
-#     - name: Customer data store
-#       notes: RDS PostgreSQL
-#   public_attack_surface:
-#     - Customer-facing web app
+assets:
+  cloud:
+    provider: AWS
+    regions: [us-west-2, us-east-1]
+    primary_services: [ECS Fargate, ECR, DynamoDB, S3, Secrets Manager, Bedrock, CloudWatch]
+  critical_systems:
+    - name: Moon orchestration service
+      notes: ECS Fargate service `moon`, FastAPI + Bedrock; behind Cloudflare tunnel
+    - name: Moon case store
+      notes: DynamoDB table (moon_cases)
+    - name: Terraform state
+      notes: S3 bucket moon-tfstate-489922706493
+    - name: GitHub repos and Actions pipeline
+      notes: hoopdunker/moon deploys to prod on push to main — supply chain critical
+  public_attack_surface:
+    - moon.groot.work (Cloudflare Access-gated UI)
+    - intel.groot.work (Cloudflare Access-gated intel dashboard)
+  key_dependencies:
+    - Python/PyPI packages (httpx, fastapi, boto3, typer)  # supply chain exposure
+    - Docker base images
+    - GitHub Actions (aws-actions/*)
 
 # ── Compliance & Frameworks ───────────────────────────────────────────────────
-# compliance:
-#   - SOC 2 Type II
+compliance: []  # TODO: add if any apply
 
 # ── Patch SLAs ────────────────────────────────────────────────────────────────
-# patch_slas:
-#   critical: 24 hours
-#   high: 7 days
-#   medium: 30 days
+patch_slas:
+  critical: 48 hours   # TODO: adjust to what you can realistically commit to
+  high: 7 days
+  medium: 30 days

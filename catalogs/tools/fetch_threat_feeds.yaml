@@ -1,16 +1,20 @@
 name: fetch_threat_feeds
 description: >
   Fetches live threat feeds: CISA KEV (Known Exploited Vulnerabilities — CVEs
-  confirmed exploited in the wild, with vendor, product, and remediation deadline)
-  and DeFiLlama hacks (DeFi/Web3 protocol exploits with amount lost, chain, and
-  attack technique, ranked by amount).
+  confirmed exploited in the wild, with vendor, product, and remediation deadline),
+  DeFiLlama hacks (DeFi/Web3 protocol exploits with amount lost, chain, and
+  attack technique, ranked by amount), and active IOCs — URLhaus malicious URLs,
+  Feodo Tracker botnet C2 IPs, and ThreatFox IOCs tagged with malware family and
+  confidence. All indicators are returned defanged.
 parameters:
   type: object
   properties:
     feed_type:
       type: string
-      enum: [all, cisa_alerts, defi_hacks]
-      description: Which feeds to pull. Defaults to all.
+      enum: [all, cisa_alerts, defi_hacks, iocs]
+      description: >
+        Which feeds to pull. Defaults to all. Use "iocs" for URLhaus URLs,
+        Feodo C2 IPs, and ThreatFox IOCs only.
     max_items:
       type: integer
       description: Maximum items to return per feed (default 10).

@@ -685,11 +685,116 @@ def test_fetch_threat_feeds_cisa_only_skips_defi():
     assert mock_cls.call_count == 1
 
 
-def test_fetch_threat_feeds_all_includes_both():
-    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_kev_client(), _defi_client()]):
+def _urlhaus_client(hours_ago=1):
+    ts = (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime("%Y-%m-%d %H:%M:%S")
+    payload = {
+        "1": [{
+            "dateadded": f"{ts} UTC",
+            "url": "http://malicious.example.com/payload.exe",
+            "url_status": "online",
+            "threat": "malware_download",
+            "tags": ["emotet"],
+        }]
+    }
+    resp = _mock_resp(content_type="application/json", json_data=payload)
+    client = MagicMock()
+    client.__enter__ = lambda s: s
+    client.__exit__ = MagicMock(return_value=False)
+    client.get.return_value = resp
+    return client
+
+
+def _feodo_client():
+    payload = [{
+        "ip_address": "203.0.113.45",
+        "port": 8080,
+        "status": "online",
+        "hostname": None,
+        "as_name": "EXAMPLE-AS",
+        "country": "US",
+        "malware": "Emotet",
+        "last_online": "2026-07-12",
+    }]
+    resp = _mock_resp(content_type="application/json", json_data=payload)
+    client = MagicMock()
+    client.__enter__ = lambda s: s
+    client.__exit__ = MagicMock(return_value=False)
+    client.get.return_value = resp
+    return client
+
+
+def _threatfox_client():
+    payload = {
+        "query_status": "ok",
+        "data": [{
+            "ioc": "198.51.100.7:443",
+            "ioc_type": "ip:port",
+            "threat_type": "botnet_cc",
+            "malware_printable": "Cobalt Strike",
+            "confidence_level": 90,
+            "first_seen": "2026-07-12 08:00:00 UTC",
+        }],
+    }
+    resp = _mock_resp(content_type="application/json", json_data=payload)
+    client = MagicMock()
+    client.__enter__ = lambda s: s
+    client.__exit__ = MagicMock(return_value=False)
+    client.post.return_value = resp
+    return client
+
+
+def test_fetch_threat_feeds_urlhaus_defangs_urls(monkeypatch):
+    monkeypatch.delenv("MOON_ABUSECH_API_KEY", raising=False)
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_urlhaus_client(), _feodo_client()]):
+        result = fetch_threat_feeds(feed_type="iocs")
+    assert "malicious[.]example[.]com" in result
+    assert "http://malicious.example.com" not in result
+
+
+def test_fetch_threat_feeds_urlhaus_filters_old(monkeypatch):
+    monkeypatch.delenv("MOON_ABUSECH_API_KEY", raising=False)
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_urlhaus_client(hours_ago=48), _feodo_client()]):
+        result = fetch_threat_feeds(feed_type="iocs", hours_back=24)
+    assert "malicious[.]example[.]com" not in result
+    assert "No URLs in the last" in result
+
+
+def test_fetch_threat_feeds_feodo_lists_c2(monkeypatch):
+    monkeypatch.delenv("MOON_ABUSECH_API_KEY", raising=False)
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_urlhaus_client(), _feodo_client()]):
+        result = fetch_threat_feeds(feed_type="iocs")
+    assert "203[.]0[.]113[.]45:8080" in result
+    assert "Emotet" in result
+
+
+def test_fetch_threat_feeds_threatfox_skipped_without_key(monkeypatch):
+    monkeypatch.delenv("MOON_ABUSECH_API_KEY", raising=False)
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_urlhaus_client(), _feodo_client()]):
+        result = fetch_threat_feeds(feed_type="iocs")
+    assert "MOON_ABUSECH_API_KEY" in result
+
+
+def test_fetch_threat_feeds_threatfox_with_key(monkeypatch):
+    monkeypatch.setenv("MOON_ABUSECH_API_KEY", "test-key")
+    tf = _threatfox_client()
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=[_urlhaus_client(), _feodo_client(), tf]):
+        result = fetch_threat_feeds(feed_type="iocs")
+    assert "Cobalt Strike" in result
+    assert "198[.]51[.]100[.]7:443" in result
+    headers = tf.post.call_args.kwargs["headers"]
+    assert headers["Auth-Key"] == "test-key"
+
+
+def test_fetch_threat_feeds_all_includes_every_feed(monkeypatch):
+    monkeypatch.setenv("MOON_ABUSECH_API_KEY", "test-key")
+    clients = [_kev_client(), _defi_client(), _urlhaus_client(), _feodo_client(), _threatfox_client()]
+    with patch("moon.tools.threat_intel.httpx.Client", side_effect=clients):
         result = fetch_threat_feeds(feed_type="all")
     assert "CISA KEV" in result
     assert "DeFiLlama" in result
+    assert "URLhaus" in result
+    assert "Feodo Tracker" in result
+    assert "ThreatFox" in result
 
 
 def test_fetch_threat_feeds_error_returns_message():
