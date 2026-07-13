@@ -123,7 +123,11 @@ def _safe_json(resp: httpx.Response, max_bytes: int = MAX_RESPONSE_BYTES) -> dic
 
 def _abusech_key() -> str:
     """abuse.ch Auth-Key (free — register at auth.abuse.ch). Enables ThreatFox."""
-    return os.environ.get("MOON_ABUSECH_API_KEY", "")
+    from moon import config  # noqa: F401 — ensures .env is loaded
+    for name in ("MOON_ABUSECH_API_KEY", "ABUSECH_API_KEY", "ABUSECH_AUTH_KEY", "ABUSE_CH_API_KEY"):
+        if os.environ.get(name):
+            return os.environ[name]
+    return ""
 
 
 def _defang(indicator: str) -> str:
